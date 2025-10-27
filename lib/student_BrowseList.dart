@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
-class StudentBrowse extends StatefulWidget {
-  const StudentBrowse({super.key});
+class StudentBrowseList extends StatefulWidget {
+  const StudentBrowseList({super.key});
 
   @override
-  State<StudentBrowse> createState() => _StudentBrowseState();
+  State<StudentBrowseList> createState() => _StudentBrowseListState();
 }
 
-class _StudentBrowseState extends State<StudentBrowse> {
-  int _selectedIndex = 0;
-
+class _StudentBrowseListState extends State<StudentBrowseList> {
   final List<Map<String, String>> rooms = [
     {
       "name": "Room 1",
@@ -33,37 +31,23 @@ class _StudentBrowseState extends State<StudentBrowse> {
     },
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-   
     return Scaffold(
       backgroundColor: Colors.white,
 
-    
       body: SafeArea(
         child: Column(
           children: [
-            // Header (fixed)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Greeting
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: const [
-                        
                         Text(
                           "Hello, Oscar",
                           style: TextStyle(
@@ -79,7 +63,6 @@ class _StudentBrowseState extends State<StudentBrowse> {
                             ],
                           ),
                         ),
-
                         Text(
                           "Welcome to Room Reservation",
                           style: TextStyle(
@@ -91,8 +74,6 @@ class _StudentBrowseState extends State<StudentBrowse> {
                       ],
                     ),
                   ),
-
-                  // Logout (fixed)
                   Column(
                     children: [
                       Container(
@@ -122,10 +103,8 @@ class _StudentBrowseState extends State<StudentBrowse> {
               ),
             ),
 
-            
             Expanded(
               child: Container(
-               
                 decoration: const BoxDecoration(
                   color: Color(0xFFB9D6FF),
                   borderRadius: BorderRadius.only(
@@ -137,9 +116,7 @@ class _StudentBrowseState extends State<StudentBrowse> {
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
                   child: SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Search bar
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -150,142 +127,112 @@ class _StudentBrowseState extends State<StudentBrowse> {
                               prefixIcon: Icon(Icons.search),
                               hintText: 'Room',
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
+                              contentPadding: EdgeInsets.symmetric(vertical: 15),
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 20),
 
-                        // Room list
-                        Center(
-                          child: Column(
-                            children: rooms.map((room) {
-                              return Container(
-                                width: 350,
-                               
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 18),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF4FF),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black12,
-                                      blurRadius: 6,
-                                      offset: const Offset(2, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        // Room Image
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Image.asset(
-                                            room["image"]!,
-                                            width: 200,
-                                            height: 100,
-                                            fit: BoxFit.contain,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return Container(
-                                                    width: 140,
-                                                    height: 100,
-                                                    color: Colors.grey[300],
-                                                    child: const Icon(
-                                                      Icons.image_not_supported,
-                                                      color: Colors.grey,
-                                                      size: 30,
-                                                    ),
-                                                  );
-                                                },
-                                          ),
+                        Column(
+                          children: rooms.map((room) {
+                            return Container(
+                              width: 350,
+                              padding: const EdgeInsets.all(12),
+                              margin: const EdgeInsets.only(bottom: 18),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF4FF),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 6,
+                                    offset: const Offset(2, 2),
+                                  ),
+                                ],
+                              ),
+                              // Set the card's main Column to start so the title/type are left-aligned
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                  
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.asset(
+                                          room["image"]!,
+                                          width: 200,
+                                          height: 110,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 200,
+                                              height: 110,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey,
+                                                size: 40,
+                                              ),
+                                            );
+                                          },
                                         ),
-                                        const SizedBox(width: 16),
-
-                                        // Detail button aligned to right
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: ElevatedButton.icon(
-                                            onPressed: () {},
-                                            icon: const Icon(
-                                              Icons.info_outline,
-                                              size: 20,
-                                              color: Colors.white,
-                                            ),
-                                            label: const Text(
-                                              "Detail",
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(
-                                                0xFF222558,
-                                              ),
-
-                                              foregroundColor: Colors.white,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 18,
-                                                    vertical: 12,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                            ),
-                                          ),
+                                      ),
+                                      const SizedBox(width: 16,),
+                                      ElevatedButton.icon(
+                                        onPressed: () {},
+                                        icon: const Icon(
+                                          Icons.info_outline,
+                                          size: 20,
+                                          color: Colors.white,
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-
-                                   
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                         
-                                      children: [
-                                        Text(
-                                          
-                                          room["name"]!,
-                                          style: const TextStyle(
-                                            fontSize: 22,
+                                        label: const Text(
+                                          "Detail",
+                                          style: TextStyle(
+                                            fontSize: 14,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.black,
+                                            color: Colors.white,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "       (${room["type"]!})",
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            color: Colors.black87,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF222558),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 18,
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(20),
                                           ),
                                         ),
-                                      ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Make the title and type left-aligned by ensuring the Column is start-aligned
+                                  Text(
+                                    room["name"]!,
+                                    textAlign: TextAlign.left,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
                                     ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "(${room["type"]!})",
+                                    textAlign: TextAlign.left,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
-
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -295,22 +242,6 @@ class _StudentBrowseState extends State<StudentBrowse> {
             ),
           ],
         ),
-      ),
-
-     
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF1E3A8A),
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: "Check Requests",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
-        ],
       ),
     );
   }
