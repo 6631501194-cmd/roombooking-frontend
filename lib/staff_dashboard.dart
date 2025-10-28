@@ -1,7 +1,75 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class StaffDashboard extends StatelessWidget {
   const StaffDashboard({super.key});
+
+
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFFDCE6F7),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFF3A7AFE), width: 3),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Are you sure to Logout ?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 25),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushReplacementNamed(context, '/nextPage');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check, color: Colors.white, size: 28),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 28),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +125,7 @@ class StaffDashboard extends StatelessWidget {
                             Icons.logout,
                             color: Color.fromARGB(255, 4, 57, 147),
                           ),
-                          onPressed: () {},
+                          onPressed: () => _showLogoutDialog(context),
                         ),
                       ),
                       const SizedBox(height: 6),
