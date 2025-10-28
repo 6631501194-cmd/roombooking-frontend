@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class StudentBrowseList extends StatefulWidget {
@@ -9,27 +10,74 @@ class StudentBrowseList extends StatefulWidget {
 
 class _StudentBrowseListState extends State<StudentBrowseList> {
   final List<Map<String, String>> rooms = [
-    {
-      "name": "Room 1",
-      "type": "Meeting room",
-      "image": "assets/images/room1.png",
-    },
-    {
-      "name": "Room 2",
-      "type": "Meeting room",
-      "image": "assets/images/room1.png",
-    },
-    {
-      "name": "Room 3",
-      "type": "Seminar room",
-      "image": "assets/images/room1.png",
-    },
-    {
-      "name": "Room 4",
-      "type": "Study room",
-      "image": "assets/images/room1.png",
-    },
+    {"name": "Room 1", "type": "Meeting room", "image": "assets/images/studyRoom1.png"},
+    {"name": "Room 2", "type": "Meeting room", "image": "assets/images/studyRoom2.jpg"},
+    {"name": "Room 3", "type": "Seminar room", "image": "assets/images/seminarRoom.jpeg"},
+    {"name": "Room 4", "type": "Multimedia room", "image": "assets/images/multimediaRoom1.jpeg"},
   ];
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFFDCE6F7),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFF3A7AFE), width: 3),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Are you sure to Logout ?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 25),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushReplacementNamed(context, '/nextPage');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check, color: Colors.white, size: 28),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 28),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +134,7 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                             Icons.logout,
                             color: Color.fromARGB(255, 4, 57, 147),
                           ),
-                          onPressed: () {},
+                          onPressed: _showLogoutDialog,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -150,13 +198,11 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                                   ),
                                 ],
                               ),
-                              // Set the card's main Column to start so the title/type are left-aligned
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.center,
-                                  
                                     children: [
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
@@ -169,7 +215,7 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                                             return Container(
                                               width: 200,
                                               height: 110,
-                                              color: Colors.grey[300],
+                                              color: const Color(0xFFE5EBFC),
                                               child: const Icon(
                                                 Icons.image_not_supported,
                                                 color: Colors.grey,
@@ -209,7 +255,6 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  // Make the title and type left-aligned by ensuring the Column is start-aligned
                                   Text(
                                     room["name"]!,
                                     textAlign: TextAlign.left,
