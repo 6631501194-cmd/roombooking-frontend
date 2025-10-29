@@ -39,7 +39,10 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 14,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -88,7 +91,10 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF222558),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -124,7 +130,9 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                               prefixIcon: Icon(Icons.search),
                               hintText: 'Search room name',
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(vertical: 15),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 15,
+                              ),
                             ),
                           ),
                         ),
@@ -151,10 +159,13 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Container(
                                             width: 200,
                                             height: 120,
@@ -162,18 +173,20 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                             child: Image.asset(
                                               room["image"]!,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return Container(
-                                                  color: Colors.grey[300],
-                                                  child: const Center(
-                                                    child: Icon(
-                                                      Icons.image_not_supported,
-                                                      color: Colors.grey,
-                                                      size: 40,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                    return Container(
+                                                      color: Colors.grey[300],
+                                                      child: const Center(
+                                                        child: Icon(
+                                                          Icons
+                                                              .image_not_supported,
+                                                          color: Colors.grey,
+                                                          size: 40,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
                                             ),
                                           ),
                                         ),
@@ -181,7 +194,8 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                         SizedBox(
                                           width: 120,
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
                                               ElevatedButton.icon(
                                                 onPressed: () {},
@@ -199,12 +213,22 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF222558),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(14),
+                                                  backgroundColor: const Color(
+                                                    0xFF222558,
                                                   ),
-                                                  minimumSize: const Size.fromHeight(44),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 12,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                  ),
+                                                  minimumSize:
+                                                      const Size.fromHeight(44),
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
@@ -224,12 +248,22 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF222558),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(14),
+                                                  backgroundColor: const Color(
+                                                    0xFF222558,
                                                   ),
-                                                  minimumSize: const Size.fromHeight(44),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 12,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                  ),
+                                                  minimumSize:
+                                                      const Size.fromHeight(44),
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
@@ -249,12 +283,22 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF222558),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(14),
+                                                  backgroundColor: const Color(
+                                                    0xFF222558,
                                                   ),
-                                                  minimumSize: const Size.fromHeight(44),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 12,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                  ),
+                                                  minimumSize:
+                                                      const Size.fromHeight(44),
                                                 ),
                                               ),
                                             ],
@@ -263,7 +307,8 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                       ],
                                     ),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
                                         Text(
                                           room["name"]!,
