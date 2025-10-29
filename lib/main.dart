@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/CheckRequestPage.dart';
 import 'package:flutter_application_1/history.dart';
 import 'lecturer_dashboard.dart';
 import 'lecture_BrowseList.dart';
@@ -63,23 +64,3 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-class CheckRequestPage extends StatelessWidget {
-  const CheckRequestPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFB9D6FF),
-      body: Center(
-        child: Text(
-          "Check Request Page",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -202,18 +202,7 @@ class HistoryPage extends StatelessWidget {
         ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 3,
-        selectedItemColor: blueSelected,
-        unselectedItemColor: Colors.black54,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'DashBoard'),
-          BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: 'Browse List'),
-          BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Check Request'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'History'),
-        ],
-      ),
+     
     );
   }
 
