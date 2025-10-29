@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/toggle_status_dialog.dart';
 import 'room_detail_screen.dart';
 import 'edit_room_dialog.dart';
 import 'add_room_dialog.dart';
@@ -50,9 +51,9 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
         });
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Room added successfully!")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Room added successfully!")));
     }
   }
 
@@ -64,7 +65,10 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 14,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -113,7 +117,10 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF222558),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -149,7 +156,9 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                               prefixIcon: Icon(Icons.search),
                               hintText: 'Search room name',
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(vertical: 15),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 15,
+                              ),
                             ),
                           ),
                         ),
@@ -176,48 +185,68 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Container(
                                             width: 200,
                                             height: 120,
                                             color: Colors.white,
-                                            child: room["image"]!.startsWith('assets/')
+                                            child:
+                                                room["image"]!.startsWith(
+                                                  'assets/',
+                                                )
                                                 ? Image.asset(
                                                     room["image"]!,
                                                     fit: BoxFit.cover,
                                                     errorBuilder:
-                                                        (context, error, stackTrace) {
-                                                      return Container(
-                                                        color: Colors.grey[300],
-                                                        child: const Center(
-                                                          child: Icon(
-                                                            Icons.image_not_supported,
-                                                            color: Colors.grey,
-                                                            size: 40,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Container(
+                                                            color: Colors
+                                                                .grey[300],
+                                                            child: const Center(
+                                                              child: Icon(
+                                                                Icons
+                                                                    .image_not_supported,
+                                                                color:
+                                                                    Colors.grey,
+                                                                size: 40,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
                                                   )
                                                 : Image.file(
                                                     File(room["image"]!),
                                                     fit: BoxFit.cover,
                                                     errorBuilder:
-                                                        (context, error, stackTrace) {
-                                                      return Container(
-                                                        color: Colors.grey[300],
-                                                        child: const Center(
-                                                          child: Icon(
-                                                            Icons.image_not_supported,
-                                                            color: Colors.grey,
-                                                            size: 40,
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Container(
+                                                            color: Colors
+                                                                .grey[300],
+                                                            child: const Center(
+                                                              child: Icon(
+                                                                Icons
+                                                                    .image_not_supported,
+                                                                color:
+                                                                    Colors.grey,
+                                                                size: 40,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
                                                   ),
                                           ),
                                         ),
@@ -235,16 +264,25 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                     MaterialPageRoute(
                                                       builder: (context) =>
                                                           StaffRoomDetail(
-                                                        roomName: room["name"] ?? "",
-                                                        roomType: room["type"] ?? "",
-                                                        imagePath: room["image"] ?? "",
-                                                        status: "Available",
-                                                      ),
+                                                            roomName:
+                                                                room["name"] ??
+                                                                "",
+                                                            roomType:
+                                                                room["type"] ??
+                                                                "",
+                                                            imagePath:
+                                                                room["image"] ??
+                                                                "",
+                                                            status: "Available",
+                                                          ),
                                                     ),
                                                   );
                                                 },
-                                                icon: const Icon(Icons.info_outline,
-                                                    size: 20, color: Colors.white),
+                                                icon: const Icon(
+                                                  Icons.info_outline,
+                                                  size: 20,
+                                                  color: Colors.white,
+                                                ),
                                                 label: const Text(
                                                   " Detail",
                                                   style: TextStyle(
@@ -254,15 +292,19 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      const Color(0xFF222558),
+                                                  backgroundColor: const Color(
+                                                    0xFF222558,
+                                                  ),
                                                   padding:
                                                       const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 12),
+                                                        horizontal: 10,
+                                                        vertical: 12,
+                                                      ),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(14),
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
                                                   ),
                                                   minimumSize:
                                                       const Size.fromHeight(44),
@@ -273,31 +315,45 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                 onPressed: () async {
                                                   final editedRoom =
                                                       await showDialog<
-                                                          Map<String, dynamic>>(
-                                                    context: context,
-                                                    builder: (context) =>
-                                                        EditRoomDialog(room: room),
-                                                  );
+                                                        Map<String, dynamic>
+                                                      >(
+                                                        context: context,
+                                                        builder: (context) =>
+                                                            EditRoomDialog(
+                                                              room: room,
+                                                            ),
+                                                      );
 
                                                   if (editedRoom != null) {
                                                     setState(() {
-                                                      final index =
-                                                          rooms.indexOf(room);
+                                                      final index = rooms
+                                                          .indexOf(room);
                                                       rooms[index] = {
-                                                        "name": editedRoom["name"],
-                                                        "type": editedRoom["type"],
-                                                        "image": editedRoom["image"],
+                                                        "name":
+                                                            editedRoom["name"],
+                                                        "type":
+                                                            editedRoom["type"],
+                                                        "image":
+                                                            editedRoom["image"],
                                                       };
                                                     });
 
-                                                    ScaffoldMessenger.of(context)
-                                                        .showSnackBar(const SnackBar(
-                                                            content: Text(
-                                                                "Room updated successfully!")));
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          "Room updated successfully!",
+                                                        ),
+                                                      ),
+                                                    );
                                                   }
                                                 },
-                                                icon: const Icon(Icons.edit,
-                                                    size: 20, color: Colors.white),
+                                                icon: const Icon(
+                                                  Icons.edit,
+                                                  size: 20,
+                                                  color: Colors.white,
+                                                ),
                                                 label: const Text(
                                                   " Edit",
                                                   style: TextStyle(
@@ -307,15 +363,19 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      const Color(0xFF222558),
+                                                  backgroundColor: const Color(
+                                                    0xFF222558,
+                                                  ),
                                                   padding:
                                                       const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 12),
+                                                        horizontal: 10,
+                                                        vertical: 12,
+                                                      ),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(14),
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
                                                   ),
                                                   minimumSize:
                                                       const Size.fromHeight(44),
@@ -323,14 +383,51 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                               ),
                                               const SizedBox(height: 8),
                                               ElevatedButton.icon(
-                                                onPressed: () {},
-                                                icon: const Icon(
-                                                    Icons.visibility_off,
-                                                    size: 20,
-                                                    color: Colors.white),
-                                                label: const Text(
-                                                  "Disable",
-                                                  style: TextStyle(
+                                                onPressed: () async {
+                                                  final result =
+                                                      await showDialog<String>(
+                                                        context: context,
+                                                        builder: (context) =>
+                                                            ToggleStatusDialog(
+                                                              roomName:
+                                                                  room["name"] ??
+                                                                  "",
+                                                              currentStatus:
+                                                                  room["status"] ??
+                                                                  "Available",
+                                                            ),
+                                                      );
+
+                                                  if (result != null &&
+                                                      result !=
+                                                          room["status"]) {
+                                                    setState(() {
+                                                      room["status"] = result;
+                                                    });
+
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(
+                                                          "Room '${room["name"]}' is now $result",
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  room["status"] == "Available"
+                                                      ? Icons.visibility_off
+                                                      : Icons.visibility,
+                                                  size: 20,
+                                                  color: Colors.white,
+                                                ),
+                                                label: Text(
+                                                  room["status"] == "Available"
+                                                      ? "Disable"
+                                                      : "Enable",
+                                                  style: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.white,
@@ -338,14 +435,24 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                 ),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
-                                                      const Color(0xFF222558),
+                                                      room["status"] ==
+                                                          "Available"
+                                                      ? const Color(
+                                                          0xFFE53935,
+                                                        ) // blue when available
+                                                      : const Color(
+                                                          0xFF222558,
+                                                        ), // red when disabled
                                                   padding:
                                                       const EdgeInsets.symmetric(
-                                                          horizontal: 10,
-                                                          vertical: 12),
+                                                        horizontal: 10,
+                                                        vertical: 12,
+                                                      ),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(14),
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
                                                   ),
                                                   minimumSize:
                                                       const Size.fromHeight(44),

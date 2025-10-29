@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'staff_Dashboard.dart';
+import 'staff_dashboard.dart';
 import 'staff_BrowseList.dart';
 
 void main() {
@@ -26,7 +26,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
 
   final List<Widget> _pages = const [
     StaffDashboard(),
