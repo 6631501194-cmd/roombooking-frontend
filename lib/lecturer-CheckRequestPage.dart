@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/history.dart';
+import 'package:flutter_application_1/lecturer-history.dart';
 import 'lecturer_dashboard.dart';
 import 'lecture_BrowseList.dart';
 
