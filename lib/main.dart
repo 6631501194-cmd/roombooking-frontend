@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-//import 'staff_BrowseList.dart';
 import 'staff_Dashboard.dart';
+import 'staff_BrowseList.dart';
 
 void main() {
   runApp(const MyApp());
@@ -59,28 +59,6 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 }
-
-class StaffBrowselist extends StatelessWidget {
-  const StaffBrowselist({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFB9D6FF),
-      body: Center(
-        child: Text(
-          "Browse List Page (Coming Soon)",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
