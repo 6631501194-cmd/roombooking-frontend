@@ -12,9 +12,20 @@ class ToggleStatusDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if the room is currently available
     final bool isCurrentlyAvailable = currentStatus == 'Available';
-    final String actionText = isCurrentlyAvailable ? "Disable" : "Enable";
+
+    // If it's available, new status should become "Disabled"
+    // If it's disabled, new status should become "Available"
     final String newStatus = isCurrentlyAvailable ? "Disabled" : "Available";
+
+    // Popup message depends on current status
+    final String message = isCurrentlyAvailable
+        ? "Are you sure to disable this room?"
+        : "Are you sure to enable this room?";
+
+    // Button text also depends on current status
+    final String confirmText = isCurrentlyAvailable ? "Disable" : "Enable";
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -25,41 +36,42 @@ class ToggleStatusDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "$actionText Room",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Room name: $roomName",
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              "Are you sure you want to $actionText this room?",
+              message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                // Confirm button
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, newStatus),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isCurrentlyAvailable
-                        ? const Color(0xFFE53935)
-                        : const Color(0xFF43A047),
+                        ? const Color(0xFFE53935) // Red for disable
+                        : const Color(0xFF43A047), // Green for enable
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
                   ),
-                  child: Text("sure"),
+                  child: Text(confirmText),
                 ),
+                // Cancel button
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, null),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.grey,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
                   ),
                   child: const Text("Cancel"),
                 ),
