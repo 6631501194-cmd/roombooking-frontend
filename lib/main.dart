@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'student_BrowseList.dart';
 import 'check_request_page.dart';
+import 'package:flutter_application_1/student_history.dart'; // merged import
 
 void main() {
   runApp(const MyApp());
@@ -28,10 +29,10 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 1;
 
-  // You can pass hasBooking to CheckRequestPage here if needed:
+  // all three pages available here
   final List<Widget> _pages = const [
     StudentBrowseList(),
-    CheckRequestPage(), 
+    CheckRequestPage(),
     HistoryPage(),
   ];
 
@@ -61,23 +62,4 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-class HistoryPage extends StatelessWidget {
-  const HistoryPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFB9D6FF),
-      body: Center(
-        child: Text(
-          "History Page (Coming Soon)",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-}
