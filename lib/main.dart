@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'student_BrowseList.dart';
+import 'check_request_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -27,10 +28,10 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 1;
 
+  // You can pass hasBooking to CheckRequestPage here if needed:
   final List<Widget> _pages = const [
-    
     StudentBrowseList(),
-    CheckRequestPage(),
+    CheckRequestPage(), 
     HistoryPage(),
   ];
 
@@ -51,34 +52,10 @@ class _MainNavigationState extends State<MainNavigation> {
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
-         
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
           BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Requests"),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
         ],
-      ),
-    );
-  }
-}
-
-
-
-class CheckRequestPage extends StatelessWidget {
-  const CheckRequestPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFB9D6FF),
-      body: Center(
-        child: Text(
-          "Check Requests Page (Coming Soon)",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
       ),
     );
   }

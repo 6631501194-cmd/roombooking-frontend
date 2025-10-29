@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/student_detail.dart';
 
 class StudentBrowseList extends StatefulWidget {
   const StudentBrowseList({super.key});
@@ -227,31 +228,43 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                                       ),
                                       const SizedBox(width: 16,),
                                       ElevatedButton.icon(
-                                        onPressed: () {},
-                                        icon: const Icon(
-                                          Icons.info_outline,
-                                          size: 20,
-                                          color: Colors.white,
-                                        ),
-                                        label: const Text(
-                                          "Detail",
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF222558),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 18,
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                        ),
-                                      ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RoomDetailScreen(
+          roomName: room["name"] ?? "",
+          roomType: room["type"] ?? "",
+          imagePath: room["image"] ?? "",
+        ),
+      ),
+    );
+  },
+  icon: const Icon(
+    Icons.info_outline,
+    size: 20,
+    color: Colors.white,
+  ),
+  label: const Text(
+    "Detail",
+    style: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFF222558),
+    padding: const EdgeInsets.symmetric(
+      horizontal: 18,
+      vertical: 12,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
+    ),
+  ),
+),
+
                                     ],
                                   ),
                                   const SizedBox(height: 12),
