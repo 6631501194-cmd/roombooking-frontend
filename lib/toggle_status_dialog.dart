@@ -52,7 +52,7 @@ class ToggleStatusDialog extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                   ),
-                  child: Text(actionText),
+                  child: Text("sure"),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, null),

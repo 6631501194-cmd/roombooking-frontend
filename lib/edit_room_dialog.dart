@@ -24,8 +24,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     super.initState();
     _roomNameController = TextEditingController(text: widget.room['name']);
     _roomTypeController = TextEditingController(text: widget.room['type']);
-    _imagePathController =
-        TextEditingController(text: widget.room['image'].split('/').last);
+    _imagePathController = TextEditingController(
+      text: widget.room['image'].split('/').last,
+    );
   }
 
   @override
@@ -36,7 +37,7 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(dynamic ImageSource) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
@@ -64,9 +65,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save image: $e')));
       }
     }
   }
@@ -76,19 +77,15 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     final type = _roomTypeController.text;
 
     if (name.isEmpty || type.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
       return;
     }
 
     final String finalImagePath = _newImagePath ?? widget.room['image'];
 
-    final result = {
-      'name': name,
-      'type': type,
-      'image': finalImagePath,
-    };
+    final result = {'name': name, 'type': type, 'image': finalImagePath};
     Navigator.pop(context, result);
   }
 
@@ -119,9 +116,8 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                   children: [
                     Text(
                       "Edit",
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 24),
                     _buildTextField(
@@ -147,9 +143,10 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: TextField(
+                   GestureDetector(
+  onTap: () => _pickImage(ImageSource.gallery),
+  child: TextField(
+
                         controller: _imagePathController,
                         enabled: false,
                         decoration: InputDecoration(
@@ -162,7 +159,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                             borderSide: BorderSide(color: Colors.grey[400]!),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           suffixIcon: const Icon(Icons.file_upload_outlined),
                         ),
                       ),
@@ -180,7 +179,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 40, vertical: 12),
+                              horizontal: 40,
+                              vertical: 12,
+                            ),
                           ),
                           child: const Text("Save"),
                         ),
@@ -193,7 +194,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 40, vertical: 12),
+                              horizontal: 40,
+                              vertical: 12,
+                            ),
                           ),
                           child: const Text("Cancel"),
                         ),
@@ -216,21 +219,18 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           decoration: InputDecoration(
             hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
       ],
