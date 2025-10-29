@@ -66,7 +66,7 @@ class StaffRoomDetail extends StatelessWidget {
                   child: Text(
                     roomName,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 30,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
@@ -76,7 +76,7 @@ class StaffRoomDetail extends StatelessWidget {
                   child: Text(
                     "($roomType)",
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 22,
                       color: Colors.black87,
                     ),
                   ),
@@ -114,7 +114,7 @@ class StaffRoomDetail extends StatelessWidget {
                                 slot['time'] as String,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16,
+                                  fontSize: 20,
                                 ),
                               ),
                             ),
@@ -135,7 +135,7 @@ class StaffRoomDetail extends StatelessWidget {
                                 slot['status'] as String,
                                 style: const TextStyle(
                                   color: Colors.black,
-                                  fontSize: 16,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'room_detail_screen.dart'; 
 
 class StaffBrowselist extends StatefulWidget {
   const StaffBrowselist({super.key});
@@ -46,8 +47,8 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: const Text(
+                  const Expanded(
+                    child: Text(
                       "Browse List",
                       style: TextStyle(
                         fontSize: 34,
@@ -147,11 +148,11 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFEFF4FF),
                                   borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
+                                  boxShadow: const [
                                     BoxShadow(
                                       color: Colors.black12,
                                       blurRadius: 6,
-                                      offset: const Offset(2, 2),
+                                      offset: Offset(2, 2),
                                     ),
                                   ],
                                 ),
@@ -163,9 +164,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                           CrossAxisAlignment.center,
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
+                                          borderRadius: BorderRadius.circular(8),
                                           child: Container(
                                             width: 200,
                                             height: 120,
@@ -175,18 +174,17 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                               fit: BoxFit.cover,
                                               errorBuilder:
                                                   (context, error, stackTrace) {
-                                                    return Container(
-                                                      color: Colors.grey[300],
-                                                      child: const Center(
-                                                        child: Icon(
-                                                          Icons
-                                                              .image_not_supported,
-                                                          color: Colors.grey,
-                                                          size: 40,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
+                                                return Container(
+                                                  color: Colors.grey[300],
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.image_not_supported,
+                                                      color: Colors.grey,
+                                                      size: 40,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
                                         ),
@@ -198,7 +196,24 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                 MainAxisAlignment.center,
                                             children: [
                                               ElevatedButton.icon(
-                                                onPressed: () {},
+                                                // ✅ when clicked, navigate to detail page
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          StaffRoomDetail(
+                                                        roomName:
+                                                            room["name"] ?? "",
+                                                        roomType:
+                                                            room["type"] ?? "",
+                                                        imagePath:
+                                                            room["image"] ?? "",
+                                                        status: "Available",
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
                                                 icon: const Icon(
                                                   Icons.info_outline,
                                                   size: 20,
@@ -213,19 +228,18 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(
-                                                    0xFF222558,
+                                                  backgroundColor:
+                                                      const Color(0xFF222558),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 12,
                                                   ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 12,
-                                                      ),
-                                                  shape: RoundedRectangleBorder(
+                                                  shape:
+                                                      RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          14,
-                                                        ),
+                                                            14),
                                                   ),
                                                   minimumSize:
                                                       const Size.fromHeight(44),
@@ -248,19 +262,18 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(
-                                                    0xFF222558,
+                                                  backgroundColor:
+                                                      const Color(0xFF222558),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 12,
                                                   ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 12,
-                                                      ),
-                                                  shape: RoundedRectangleBorder(
+                                                  shape:
+                                                      RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          14,
-                                                        ),
+                                                            14),
                                                   ),
                                                   minimumSize:
                                                       const Size.fromHeight(44),
@@ -283,19 +296,18 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                   ),
                                                 ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(
-                                                    0xFF222558,
+                                                  backgroundColor:
+                                                      const Color(0xFF222558),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 12,
                                                   ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 12,
-                                                      ),
-                                                  shape: RoundedRectangleBorder(
+                                                  shape:
+                                                      RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          14,
-                                                        ),
+                                                            14),
                                                   ),
                                                   minimumSize:
                                                       const Size.fromHeight(44),
@@ -306,6 +318,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                         ),
                                       ],
                                     ),
+                                    const SizedBox(height: 10),
                                     Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
