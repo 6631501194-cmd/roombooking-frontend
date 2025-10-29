@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'staff_dashboard.dart';
 import 'staff_BrowseList.dart';
+import 'staff_history.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,7 +27,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
     StaffDashboard(),
@@ -55,27 +56,6 @@ class _MainNavigationState extends State<MainNavigation> {
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
         ],
-      ),
-    );
-  }
-}
-
-class HistoryPage extends StatelessWidget {
-  const HistoryPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFB9D6FF),
-      body: Center(
-        child: Text(
-          "History Page (Coming Soon)",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
       ),
     );
   }
