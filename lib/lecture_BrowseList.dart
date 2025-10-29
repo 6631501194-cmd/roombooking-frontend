@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/lecture_details.dart';
 
 class LectureBrowseList extends StatelessWidget {
   const LectureBrowseList({super.key});
@@ -130,32 +131,45 @@ class LectureBrowseList extends StatelessWidget {
                                         ),
                                       ),
                                       ElevatedButton.icon(
-                                        onPressed: () {},
-                                        icon: const Icon(
-                                          Icons.info_outline,
-                                          size: 20,
-                                          color: Colors.white,
-                                        ),
-                                        label: const Text(
-                                          "Detail",
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF222558),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 12,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(14),
-                                          ),
-                                          minimumSize: const Size(110, 44),
-                                        ),
-                                      ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LectureDetails(
+          roomName: room["name"]!,
+          roomType: room["type"]!,
+          imagePath: room["image"]!,
+          status: "Available", // or "Disabled" if you want to test disabled mode
+        ),
+      ),
+    );
+  },
+  icon: const Icon(
+    Icons.info_outline,
+    size: 20,
+    color: Colors.white,
+  ),
+  label: const Text(
+    "Detail",
+    style: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+  style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFF222558),
+    padding: const EdgeInsets.symmetric(
+      horizontal: 14,
+      vertical: 12,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    ),
+    minimumSize: const Size(110, 44),
+  ),
+)
+
                                     ],
                                   ),
                                   const SizedBox(height: 12),
