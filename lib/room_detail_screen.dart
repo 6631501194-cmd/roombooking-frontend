@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class StaffRoomDetail extends StatelessWidget {
@@ -17,6 +18,42 @@ class StaffRoomDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isAvailable = status == "Available";
+    final List<Map<String, dynamic>> timeSlots;
+    const Color redColor = Color(0xFFE53935);
+
+    if (isAvailable) {
+      timeSlots = [
+        {
+          'time': '8:00 - 10:00',
+          'status': 'Available',
+          'color': const Color(0xFF00C896),
+        },
+        {
+          'time': '10:00 - 12:00',
+          'status': 'Pending',
+          'color': const Color(0xFFFFA500),
+        },
+        {
+          'time': '13:00 - 15:00',
+          'status': 'Reserved',
+          'color': const Color(0xFF008CBA),
+        },
+        {
+          'time': '15:00 - 17:00',
+          'status': 'Reserved',
+          'color': const Color(0xFF008CBA),
+        },
+      ];
+    } else {
+      timeSlots = [
+        {'time': '8:00 - 10:00', 'status': 'Disable', 'color': redColor},
+        {'time': '10:00 - 12:00', 'status': 'Disable', 'color': redColor},
+        {'time': '13:00 - 15:00', 'status': 'Disable', 'color': redColor},
+        {'time': '15:00 - 17:00', 'status': 'Disable', 'color': redColor},
+      ];
+    }
+
     Widget displayedImage;
     if (imagePath.startsWith('assets/')) {
       displayedImage = Image.asset(
@@ -33,13 +70,6 @@ class StaffRoomDetail extends StatelessWidget {
         fit: BoxFit.cover,
       );
     }
-
-    final times = [
-      {'time': '8:00 - 10:00', 'status': 'Available', 'color': const Color(0xFF00C896)},
-      {'time': '10:00 - 12:00', 'status': 'Pending', 'color': const Color(0xFFFFA500)},
-      {'time': '13:00 - 15:00', 'status': 'Reserved', 'color': const Color(0xFF008CBA)},
-      {'time': '15:00 - 17:00', 'status': 'Reserved', 'color': const Color(0xFF008CBA)},
-    ];
 
     final roomDetailContent = Expanded(
       child: Container(
@@ -75,10 +105,7 @@ class StaffRoomDetail extends StatelessWidget {
                 Center(
                   child: Text(
                     "($roomType)",
-                    style: const TextStyle(
-                      fontSize: 22,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 22, color: Colors.black87),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -92,7 +119,7 @@ class StaffRoomDetail extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Column(
-                  children: times.map((slot) {
+                  children: timeSlots.map((slot) {
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       child: Row(
@@ -154,142 +181,97 @@ class StaffRoomDetail extends StatelessWidget {
       ),
     );
 
-    final maintenanceOverlay = Stack(
-      children: [
-        ColorFiltered(
-          colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.3),
-            BlendMode.srcOver,
-          ),
-          child: Column( 
-             children: [
-                Padding( 
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 14,
+    final header = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Expanded(
+            child: Text(
+              "Room Details",
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                shadows: [
+                  Shadow(
+                    offset: Offset(2, 4),
+                    blurRadius: 6,
+                    color: Color.fromARGB(40, 0, 0, 0),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black54, width: 1.5),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(children: [header, roomDetailContent]),
+            if (status == "Disabled")
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                child: Container(color: Colors.white.withOpacity(0.1)),
+              ),
+
+            if (status == "Disabled")
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB0BEC5),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Expanded(
-                        child: Text(
-                          "Room Details",
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black, 
-                            shadows: [
-                              Shadow(
-                                offset: Offset(2, 4),
-                                blurRadius: 6,
-                                color: Color.fromARGB(40, 0, 0, 0),
-                              ),
-                            ],
-                          ),
+                      const Text(
+                        "This room is maintenance.",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
+                        textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 15),
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
+                          color: Colors.black,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black54, width: 1.5),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.black), 
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                     ],
                   ),
                 ),
-                roomDetailContent, 
-             ],
-           ),
-        ),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "This room is maintenance.",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 15),
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.black),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: status == "Disabled"
-            ? maintenanceOverlay 
-            : Column( 
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            "Room Details",
-                            style: TextStyle(
-                              fontSize: 34,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(2, 4),
-                                  blurRadius: 6,
-                                  color: Color.fromARGB(40, 0, 0, 0),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.black54, width: 1.5),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  roomDetailContent, 
-                ],
               ),
+          ],
+        ),
       ),
     );
   }

@@ -37,9 +37,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     super.dispose();
   }
 
-  Future<void> _pickImage(dynamic ImageSource) async {
+  Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile == null) return;
 
@@ -143,10 +143,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                   GestureDetector(
-  onTap: () => _pickImage(ImageSource.gallery),
-  child: TextField(
-
+                    GestureDetector(
+                      onTap: () => _pickImage(ImageSource.gallery),
+                      child: TextField(
                         controller: _imagePathController,
                         enabled: false,
                         decoration: InputDecoration(
