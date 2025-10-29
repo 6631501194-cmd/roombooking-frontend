@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/history.dart';
 import 'lecturer_dashboard.dart';
+import 'lecture_BrowseList.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,7 +32,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = const [
     LectureDashboard(),
     LectureBrowseList(),
-    CheckRequest(),
+    CheckRequestPage(),
     HistoryPage(),
   ];
 
@@ -62,8 +63,8 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-class LectureBrowseList extends StatelessWidget {
-  const LectureBrowseList({super.key});
+class CheckRequestPage extends StatelessWidget {
+  const CheckRequestPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -71,28 +72,7 @@ class LectureBrowseList extends StatelessWidget {
       backgroundColor: Color(0xFFB9D6FF),
       body: Center(
         child: Text(
-          "Browse List Page (Coming Soon)",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CheckRequest extends StatelessWidget {
-  const CheckRequest({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFB9D6FF),
-      body: Center(
-        child: Text(
-          "Check Request Page (Coming Soon)",
+          "Check Request Page",
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w600,
