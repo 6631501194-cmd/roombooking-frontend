@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'login-signin.dart';
 import 'login-signup.dart';
-import 'student_BrowseList.dart';
-import 'student-check_request_page.dart';
-import 'student_history.dart';
-import 'lecturer_dashboard.dart';
-import 'lecture_BrowseList.dart';
-import 'lecturer-CheckRequestPage.dart';
-import 'lecturer-history.dart';
+import 'staff_dashboard.dart';
+import 'staff_BrowseList.dart';
+import 'staff_history.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +22,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const LoginSignup(),
-        '/main': (context) => const MainNavigation(),
+        '/staffMain': (context) => const StaffNavigation(),
       },
     );
   }
@@ -115,20 +111,20 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+class StaffNavigation extends StatefulWidget {
+  const StaffNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<StaffNavigation> createState() => _StaffNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class _StaffNavigationState extends State<StaffNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const LectureDashboard(),
-    const LectureBrowseList(),
-   
+  final List<Widget> _pages = const [
+    StaffDashboard(),
+    StaffBrowselist(),
+    HistoryPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -143,14 +139,13 @@ class _MainNavigationState extends State<MainNavigation> {
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF1E3A8A),
         unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Dashboard"),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Request"),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
         ],
       ),

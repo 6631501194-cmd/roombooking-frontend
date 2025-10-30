@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'login-signup.dart';
 import 'Student_BrowseList.dart';
 import 'lecturer_dashboard.dart';
+// import 'staff_dashboard.dart'; // not needed when using named routes
 
 class StaffHomePage extends StatelessWidget {
   const StaffHomePage({super.key});
@@ -37,11 +38,13 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showMessage(String message, {Color background = Colors.red}) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: background,
-      duration: const Duration(seconds: 2),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: background,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _tryLogin() async {
@@ -55,6 +58,8 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(milliseconds: 400));
+    // stop if the widget was disposed while awaiting
+    if (!mounted) return;
 
     if (email == 'user' && password == '1234') {
       Navigator.pushReplacement(
@@ -62,10 +67,8 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (_) => const StudentBrowseList()),
       );
     } else if (email == 'staff' && password == '1234') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const StaffHomePage()),
-      );
+      // navigate to the staff main navigation (includes dashboard + bottom nav)
+      Navigator.pushReplacementNamed(context, '/staffMain');
     } else if (email == 'lecturer' && password == '1234') {
       Navigator.pushReplacement(
         context,
@@ -189,7 +192,11 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: InputDecoration(
                         hintText: 'Password',
                         suffixIcon: IconButton(
-                          icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                          icon: Icon(
+                            _obscure
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                         filled: true,
@@ -222,10 +229,15 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text(
                                 'Next',
-                                style: TextStyle(fontSize: 20, color: Colors.white),
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.white,
+                                ),
                               ),
                       ),
                     ),
@@ -245,7 +257,9 @@ class _LoginPageState extends State<LoginPage> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const LoginSignup()),
+                            MaterialPageRoute(
+                              builder: (context) => const LoginSignup(),
+                            ),
                           );
                         },
                         child: RichText(
