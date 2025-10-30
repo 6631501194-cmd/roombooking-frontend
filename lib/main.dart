@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'login-signin.dart'; 
-import 'login-signup.dart';   
+import 'login-signin.dart';
+import 'login-signup.dart';
+import 'student_BrowseList.dart';
+import 'student-check_request_page.dart';
+import 'student_history.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,9 +15,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: WelcomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const WelcomeScreen(),
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const LoginSignup(),
+        '/main': (context) => const MainNavigation(),
+      },
     );
   }
 }
@@ -28,7 +37,6 @@ class WelcomeScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // รูป blob มุมบนซ้าย
           Positioned(
             top: 0,
             left: 0,
@@ -38,8 +46,6 @@ class WelcomeScreen extends StatelessWidget {
               fit: BoxFit.cover,
             ),
           ),
-
-          // เนื้อหาหลัก
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -65,21 +71,14 @@ class WelcomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
-                      textAlign: TextAlign.left,
                     ),
                     const SizedBox(height: 40),
                     buildButton('Sign in', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginPage()),
-                      );
+                      Navigator.pushNamed(context, '/login');
                     }),
                     const SizedBox(height: 35),
                     buildButton('Sign up', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginSignup()),
-                      );
+                      Navigator.pushNamed(context, '/signup');
                     }),
                   ],
                 ),
@@ -107,6 +106,44 @@ class WelcomeScreen extends StatelessWidget {
           label,
           style: const TextStyle(fontSize: 20, color: Colors.white),
         ),
+      ),
+    );
+  }
+}
+
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
+  @override
+  State<MainNavigation> createState() => _MainNavigationState();
+}
+
+class _MainNavigationState extends State<MainNavigation> {
+  int _selectedIndex = 0;
+  final List<Widget> _pages = const [
+    StudentBrowseList(),
+    CheckRequestPage(),
+    HistoryPage(),
+  ];
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF1E3A8A),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Requests"),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
+        ],
       ),
     );
   }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/main.dart';
-import 'login-signin.dart'; // make sure this file exposes LoginPage
+import 'login-signin.dart'; // imports LoginPage for navigation
 
 class LoginSignup extends StatefulWidget {
   const LoginSignup({super.key});
@@ -166,13 +165,8 @@ class _LoginSignupState extends State<LoginSignup> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const WelcomeScreen(),
-                              ),
-                              (route) => false,
-                            );
+                            // Go back to previous screen (Welcome)
+                            Navigator.pop(context);
                           },
                           child: Container(
                             height: 50,

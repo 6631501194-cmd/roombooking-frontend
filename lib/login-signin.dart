@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login-signup.dart';
+import 'Student_BrowseList.dart';
 
-// Simple placeholder pages you can replace with your real Student/Staff/Lecturer pages later.
-class StudentHomePage extends StatelessWidget {
-  const StudentHomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Student Page')),
-      body: const Center(child: Text('Student Page (placeholder)')),
-    );
-  }
-}
-
+// Simple placeholder pages for staff/lecturer (replace with real pages later)
 class StaffHomePage extends StatelessWidget {
   const StaffHomePage({super.key});
   @override
@@ -80,10 +70,10 @@ class _LoginPageState extends State<LoginPage> {
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (email == 'user' && password == '1234') {
-      // Go to student page (replace with your real Student page)
+      // Go to student browse list page (real student UI)
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const StudentHomePage()),
+        MaterialPageRoute(builder: (_) => const StudentBrowseList()),
       );
     } else if (email == 'staff' && password == '1234') {
       // Go to staff page (replace with your real Staff page)
@@ -109,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // top image
@@ -164,8 +154,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         InkWell(
                           onTap: () {
-                            // If you want to remove this and return to a welcome screen,
-                            // replace the Navigator.pushAndRemoveUntil call with your welcome screen.
                             Navigator.pop(context);
                           },
                           borderRadius: BorderRadius.circular(20),
