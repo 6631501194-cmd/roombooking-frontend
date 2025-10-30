@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login-signup.dart';
 import 'Student_BrowseList.dart';
+import 'lecturer_dashboard.dart';
 
-// Simple placeholder pages for staff/lecturer (replace with real pages later)
 class StaffHomePage extends StatelessWidget {
   const StaffHomePage({super.key});
   @override
@@ -10,17 +10,6 @@ class StaffHomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Staff Page')),
       body: const Center(child: Text('Staff Page (placeholder)')),
-    );
-  }
-}
-
-class LecturerHomePage extends StatelessWidget {
-  const LecturerHomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lecturer Page')),
-      body: const Center(child: Text('Lecturer Page (placeholder)')),
     );
   }
 }
@@ -65,27 +54,22 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     setState(() => _isLoading = true);
-
-    // Simulate a short delay as if contacting a server (optional).
     await Future.delayed(const Duration(milliseconds: 400));
 
     if (email == 'user' && password == '1234') {
-      // Go to student browse list page (real student UI)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const StudentBrowseList()),
       );
     } else if (email == 'staff' && password == '1234') {
-      // Go to staff page (replace with your real Staff page)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const StaffHomePage()),
       );
     } else if (email == 'lecturer' && password == '1234') {
-      // Go to lecturer page (replace with your real Lecturer page)
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LecturerHomePage()),
+        MaterialPageRoute(builder: (_) => const LectureDashboard()),
       );
     } else {
       _showMessage('Invalid credentials. Please try again.');
@@ -102,7 +86,6 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // top image
           Positioned(
             top: 0,
             left: 0,
@@ -112,7 +95,6 @@ class _LoginPageState extends State<LoginPage> {
               width: MediaQuery.of(context).size.width,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) {
-                // fallback if asset missing
                 return Container(
                   height: screenHeight * 0.38,
                   color: Colors.grey.shade200,
@@ -120,8 +102,6 @@ class _LoginPageState extends State<LoginPage> {
               },
             ),
           ),
-
-          // form container
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -140,7 +120,6 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header + Back Button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -182,7 +161,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // Email Field
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(
@@ -205,7 +183,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Password Field
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscure,
@@ -233,7 +210,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // Next Button
                     SizedBox(
                       width: double.infinity,
                       height: 60,
@@ -254,8 +230,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-                    // Cancel Button
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -266,8 +240,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-                    // Register Link
                     Center(
                       child: GestureDetector(
                         onTap: () {

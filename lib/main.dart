@@ -4,6 +4,10 @@ import 'login-signup.dart';
 import 'student_BrowseList.dart';
 import 'student-check_request_page.dart';
 import 'student_history.dart';
+import 'lecturer_dashboard.dart';
+import 'lecture_BrowseList.dart';
+import 'lecturer-CheckRequestPage.dart';
+import 'lecturer-history.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,11 +77,11 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    buildButton('Sign in', () {
+                    _buildButton('Sign in', () {
                       Navigator.pushNamed(context, '/login');
                     }),
                     const SizedBox(height: 35),
-                    buildButton('Sign up', () {
+                    _buildButton('Sign up', () {
                       Navigator.pushNamed(context, '/signup');
                     }),
                   ],
@@ -90,7 +94,7 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  Widget buildButton(String label, VoidCallback onPressed) {
+  Widget _buildButton(String label, VoidCallback onPressed) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -120,13 +124,17 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
-  final List<Widget> _pages = const [
-    StudentBrowseList(),
-    CheckRequestPage(),
-    HistoryPage(),
+
+  final List<Widget> _pages = [
+    const LectureDashboard(),
+    const LectureBrowseList(),
+   
   ];
+
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -140,8 +148,9 @@ class _MainNavigationState extends State<MainNavigation> {
         selectedItemColor: const Color(0xFF1E3A8A),
         unselectedItemColor: Colors.grey,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Dashboard"),
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Requests"),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Request"),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
         ],
       ),
