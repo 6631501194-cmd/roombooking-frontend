@@ -26,7 +26,11 @@ class CheckRequestPage extends StatelessWidget {
                   color: Colors.black,
                   // small shadow like in the screenshot
                   shadows: [
-                    Shadow(offset: Offset(0, 1), blurRadius: 2, color: Color.fromARGB(30, 0, 0, 0)),
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 2,
+                      color: Color.fromARGB(30, 0, 0, 0),
+                    ),
                   ],
                 ),
               ),
@@ -90,14 +94,18 @@ class CheckRequestPage extends StatelessWidget {
                                           width: 120,
                                           height: 90,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              width: 120,
-                                              height: 90,
-                                              color: Colors.grey[200],
-                                              child: const Icon(Icons.image_not_supported, color: Colors.grey),
-                                            );
-                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 120,
+                                                  height: 90,
+                                                  color: Colors.grey[200],
+                                                  child: const Icon(
+                                                    Icons.image_not_supported,
+                                                    color: Colors.grey,
+                                                  ),
+                                                );
+                                              },
                                         ),
                                       ),
 
@@ -106,7 +114,8 @@ class CheckRequestPage extends StatelessWidget {
                                       // Room info + status
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             // Room title
                                             const Text(
@@ -132,19 +141,30 @@ class CheckRequestPage extends StatelessWidget {
                                             const SizedBox(height: 12),
 
                                             // Pending pill aligned to left of the right column (similar to example)
+                                            // 🔹 Status pill
                                             Align(
                                               alignment: Alignment.centerLeft,
                                               child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 14,
+                                                      vertical: 8,
+                                                    ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.orange,
-                                                  borderRadius: BorderRadius.circular(20),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                   boxShadow: const [
                                                     BoxShadow(
-                                                      color: Color.fromARGB(30, 0, 0, 0),
+                                                      color: Color.fromARGB(
+                                                        30,
+                                                        0,
+                                                        0,
+                                                        0,
+                                                      ),
                                                       blurRadius: 6,
                                                       offset: Offset(0, 3),
-                                                    )
+                                                    ),
                                                   ],
                                                 ),
                                                 child: const Text(
@@ -154,6 +174,70 @@ class CheckRequestPage extends StatelessWidget {
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 12),
+
+                                            // 🔹 Reason for booking section
+                                            Container(
+                                              width: double.infinity,
+                                              padding: const EdgeInsets.all(14),
+                                              decoration: BoxDecoration(
+                                                color: const Color(
+                                                  0xFFD6E6FF,
+                                                ), // Light blue background
+                                                borderRadius:
+                                                    BorderRadius.circular(15),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFF8BB4FF,
+                                                  ), // Border color — slightly darker blue
+                                                  width: 1.8,
+                                                ),
+                                                boxShadow: const [
+                                                  BoxShadow(
+                                                    color: Color.fromARGB(
+                                                      40,
+                                                      0,
+                                                      0,
+                                                      0,
+                                                    ),
+                                                    blurRadius: 8,
+                                                    offset: Offset(0, 4),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  // Decorative bar or icon on the left
+                                                  Container(
+                                                    width: 5,
+                                                    height: 45,
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  // Text content
+                                                  const Expanded(
+                                                    child: Text(
+                                                      'Reason: Group study discussion ',
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        color: Colors.black87,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        height: 1.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],
@@ -170,7 +254,10 @@ class CheckRequestPage extends StatelessWidget {
                                   child: Center(
                                     child: Text(
                                       'No pending requests',
-                                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
                                   ),
                                 ),

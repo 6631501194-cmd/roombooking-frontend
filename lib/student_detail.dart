@@ -265,85 +265,116 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
   }
 
   void showBookingDialog(String title, bool confirm, VoidCallback? onBooked) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: const Color(0xFFE6F0FF),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+  final TextEditingController reasonController = TextEditingController();
+
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: const Color(0xFFE6F0FF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // 🔹 Show textfield only if confirm = true
+              if (confirm)
+                TextField(
+                  controller: reasonController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: "Enter your reason for booking this room...",
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Colors.black26),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 22),
-                confirm
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 42,
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
+
+              const SizedBox(height: 20),
+
+              confirm
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.check_circle,
+                              color: Colors.green, size: 45),
+                          onPressed: () {
+                            final reason = reasonController.text.trim();
+
+                            if (reason.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                    'Room booked successfully!',
-                                  ),
-                                  backgroundColor: Colors.green,
+                                  content:
+                                      Text('Please enter a reason before booking.'),
+                                  backgroundColor: Colors.red,
                                   duration: Duration(seconds: 2),
                                 ),
                               );
-                              if (onBooked != null) onBooked();
-                            },
-                          ),
-                          const SizedBox(width: 50),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.cancel,
-                              color: Colors.red,
-                              size: 42,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      )
-                    : Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
+                              return;
+                            }
+
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Room booked successfully!\nReason: $reason'),
+                                backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                            if (onBooked != null) onBooked();
+                          },
                         ),
-                        padding: const EdgeInsets.all(8),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.black87,
-                            size: 36,
-                          ),
+                        const SizedBox(width: 50),
+                        IconButton(
+                          icon: const Icon(Icons.cancel,
+                              color: Colors.red, size: 42),
                           onPressed: () => Navigator.pop(context),
                         ),
+                      ],
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
                       ),
-              ],
-            ),
+                      padding: const EdgeInsets.all(8),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.black87,
+                          size: 36,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
 }

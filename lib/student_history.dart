@@ -6,19 +6,16 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Colors
-    const bgBlue = Color.fromRGBO(207, 224, 255, 1);
     const cardGrey = Color.fromARGB(255, 176, 189, 197);
     const borderGrey = Color.fromARGB(255, 168, 183, 194);
     const textDark = Color(0xFF0F1621);
     const approvedGreen = Color(0xFF18A05B);
-    const rejectedRed = Color(0xFFD9534F); // ป้าย Rejected
-    const blueSelected = Color(0xFF1E5CD9);
+    const rejectedRed = Color(0xFFD9534F);
 
     final items = <_Booking>[
       _Booking(date: DateTime(2025, 11, 22), start: '10:00', end: '12:00', room: 'Room 1', requester: 'David Lee', approved: true),
-      _Booking(date: DateTime(2025, 11, 22), start: '10:00', end: '12:00', room: 'Room 1', requester: 'David Lee', approved: false), 
-      _Booking(date: DateTime(2025, 11, 22), start: '10:00', end: '12:00', room: 'Room 1', requester: 'David Lee', approved: true),
-      _Booking(date: DateTime(2025, 11, 22), start: '10:00', end: '12:00', room: 'Room 1', requester: 'David Lee', approved: true),
+      _Booking(date: DateTime(2025, 11, 22), start: '13:00', end: '15:00', room: 'Room 2', requester: 'Anna Kim', approved: false),
+      _Booking(date: DateTime(2025, 11, 23), start: '08:00', end: '10:00', room: 'Room 3', requester: 'John Smith', approved: true),
     ];
 
     return Scaffold(
@@ -33,24 +30,27 @@ class HistoryPage extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'History',
-                  style: const TextStyle(
-                    color: textDark,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    shadows: [
+                      Shadow(offset: Offset(0, 1), blurRadius: 2, color: Color.fromARGB(30, 0, 0, 0)),
+                    ],
                   ),
                 ),
               ),
             ),
 
-            // BG
+            // Blue background area
             Expanded(
               child: Container(
+                width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: bgBlue,
+                  color: Color(0xFFB9D6FF),
                   borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(48),
-                    topLeft: Radius.circular(48),
+                    topLeft: Radius.circular(50),
+                    topRight: Radius.circular(50),
                   ),
                 ),
                 child: ListView.builder(
@@ -59,7 +59,7 @@ class HistoryPage extends StatelessWidget {
                   itemBuilder: (context, i) {
                     final it = items[i];
                     final statusColor = it.approved ? approvedGreen : rejectedRed;
-                    final statusText  = it.approved ? 'Approved' : 'Rejected';
+                    final statusText = it.approved ? 'Approved' : 'Rejected';
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +73,7 @@ class HistoryPage extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               fontStyle: FontStyle.italic,
                               color: textDark,
-                              fontSize: 15,
+                              fontSize: 20,
                             ),
                           ),
                         ),
@@ -81,7 +81,7 @@ class HistoryPage extends StatelessWidget {
                         // Card
                         Container(
                           decoration: BoxDecoration(
-                            color: cardGrey,
+                            color: const Color(0xFFEFF4FF),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: borderGrey),
                             boxShadow: const [
@@ -91,19 +91,18 @@ class HistoryPage extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           child: IntrinsicHeight(
                             child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Left 
+                                // Left
                                 Expanded(
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Text(
                                         it.room,
                                         style: const TextStyle(
                                           color: textDark,
-                                          fontSize: 16,
+                                          fontSize: 18,
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -112,7 +111,7 @@ class HistoryPage extends StatelessWidget {
                                         '(Meeting room)',
                                         style: TextStyle(
                                           color: Colors.black,
-                                          fontSize: 12,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -121,25 +120,50 @@ class HistoryPage extends StatelessWidget {
                                         '${it.start}-${it.end}',
                                         style: const TextStyle(
                                           color: textDark,
-                                          fontSize: 15,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // 🔹 Small Reason Box Below Time
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD6E6FF),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: Color(0xFF8BB4FF), width: 1.2),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Color.fromARGB(30, 0, 0, 0),
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Text(
+                                          'Reason: Group study',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
 
-                                // Center Divider
+                                // Divider
                                 const VerticalDivider(
                                   width: 28,
                                   thickness: 1.4,
                                   color: Colors.black,
                                 ),
 
-                                // Right 
+                                // Right
                                 Expanded(
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Container(
@@ -151,7 +175,7 @@ class HistoryPage extends StatelessWidget {
                                         child: Text(
                                           statusText,
                                           style: const TextStyle(
-                                            color: Color.fromARGB(255, 0, 0, 0),
+                                            color: Colors.black,
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -192,9 +216,6 @@ class HistoryPage extends StatelessWidget {
           ],
         ),
       ),
-
-      // Bottom Navigation Bar
-     
     );
   }
 
@@ -211,6 +232,7 @@ class _Booking {
   final String room;
   final String requester;
   final bool approved;
+
   _Booking({
     required this.date,
     required this.start,
