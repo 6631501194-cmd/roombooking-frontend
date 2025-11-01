@@ -192,55 +192,89 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
     );
   }
 
-  void _showConfirmDialog(BuildContext context, int index, bool isApprove) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFFD1DCE4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Are you sure to ${isApprove ? 'approve' : 'reject'} ?',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+ void _showConfirmDialog(BuildContext context, int index, bool isApprove) {
+  final TextEditingController reasonController = TextEditingController();
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AlertDialog(
+      backgroundColor: const Color(0xFFD1DCE4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(25),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Are you sure to ${isApprove ? 'approve' : 'reject'}?',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 20),
+
+          // ✅ Show text field if rejecting
+          if (!isApprove) ...[
+            TextField(
+              controller: reasonController,
+              decoration: InputDecoration(
+                hintText: 'Enter rejection reason...',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.black26),
+                ),
+              ),
+              maxLines: 2,
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.check_circle, color: Colors.green, size: 36),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      bookedRooms.removeAt(index);
-                    });
+          ],
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.check_circle, color: Colors.green, size: 36),
+                onPressed: () {
+                  if (!isApprove && reasonController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isApprove
-                              ? 'Request approved (moved to history)'
-                              : 'Request rejected (moved to history)',
-                        ),
-                        backgroundColor: isApprove ? Colors.green : Colors.red,
+                      const SnackBar(
+                        content: Text('Please enter a reason before rejecting.'),
+                        backgroundColor: Colors.red,
                       ),
                     );
-                  },
-                ),
-                const SizedBox(width: 20),
-                IconButton(
-                  icon: const Icon(Icons.cancel, color: Colors.red, size: 36),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ],
-        ),
+                    return;
+                  }
+
+                  Navigator.pop(context);
+                  setState(() {
+                    bookedRooms.removeAt(index);
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isApprove
+                            ? 'Request approved (moved to history)'
+                            : 'Request rejected (Reason: ${reasonController.text.trim()})',
+                      ),
+                      backgroundColor: isApprove ? Colors.green : Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 20),
+              IconButton(
+                icon: const Icon(Icons.cancel, color: Colors.red, size: 36),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

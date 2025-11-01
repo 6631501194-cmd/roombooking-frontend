@@ -28,7 +28,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // Bottom navigation removed as requested.
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,10 +59,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_rounded,
-                        color: Colors.black87,
-                      ),
+                      icon: const Icon(Icons.arrow_back_rounded,
+                          color: Colors.black87),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -87,7 +84,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // image
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: Image.asset(
@@ -98,7 +94,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 18),
-
                       Text(
                         widget.roomName,
                         style: const TextStyle(
@@ -114,7 +109,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                           color: Colors.black87,
                         ),
                       ),
-
                       const SizedBox(height: 30),
                       const Align(
                         alignment: Alignment.centerLeft,
@@ -129,39 +123,18 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                       ),
                       const SizedBox(height: 15),
 
-                      //
-                      buildTimeSlot(
-                        '8:00-10:00',
-                        'Available',
-                        const Color(0xFF00C896),
-                        true,
-                        onBooked,
-                      ),
+                      // Time Slots
+                      buildTimeSlot('8:00-10:00', 'Available',
+                          const Color(0xFF00C896), true, onBooked),
                       const SizedBox(height: 10),
-                      buildTimeSlot(
-                        '10:00-12:00',
-                        'Pending',
-                        const Color(0xFFFFA500),
-                        false,
-                        null,
-                      ),
+                      buildTimeSlot('10:00-12:00', 'Pending',
+                          const Color(0xFFFFA500), false, null),
                       const SizedBox(height: 10),
-                      buildTimeSlot(
-                        '13:00-15:00',
-                        'Reserved',
-                        const Color(0xFF008CBA),
-                        false,
-                        null,
-                      ),
+                      buildTimeSlot('13:00-15:00', 'Reserved',
+                          const Color(0xFF008CBA), false, null),
                       const SizedBox(height: 10),
-                      // Changed from "Maintenance" to "Reserved" as requested
-                      buildTimeSlot(
-                        '15:00-17:00',
-                        'Reserved',
-                        const Color(0xFF008CBA),
-                        false,
-                        null,
-                      ),
+                      buildTimeSlot('15:00-17:00', 'Reserved',
+                          const Color(0xFF008CBA), false, null),
                     ],
                   ),
                 ),
@@ -173,7 +146,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     );
   }
 
-  // 🔹 now NON-static (so it keeps valid context)
   Widget buildTimeSlot(
     String time,
     String status,
@@ -227,7 +199,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             onPressed: () {
               if (canBook) {
                 showBookingDialog(
-                  'Are you sure to book this room ?',
+                  'Are you sure to book this room?',
                   true,
                   onBooked,
                 );
@@ -242,13 +214,13 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: canBook
-                  ? const Color(0xFF222558)
-                  : Colors.grey.shade400,
+              backgroundColor:
+                  canBook ? const Color(0xFF222558) : Colors.grey.shade400,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
             ),
             child: const Text(
               "Book",
@@ -265,116 +237,75 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
   }
 
   void showBookingDialog(String title, bool confirm, VoidCallback? onBooked) {
-  final TextEditingController reasonController = TextEditingController();
-
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return Dialog(
-        backgroundColor: const Color(0xFFE6F0FF),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // 🔹 Show textfield only if confirm = true
-              if (confirm)
-                TextField(
-                  controller: reasonController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    hintText: "Enter your reason for booking this room...",
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Colors.black26),
-                    ),
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: const Color(0xFFE6F0FF),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
                   ),
                 ),
+                const SizedBox(height: 22),
 
-              const SizedBox(height: 20),
-
-              confirm
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check_circle,
-                              color: Colors.green, size: 45),
-                          onPressed: () {
-                            final reason = reasonController.text.trim();
-
-                            if (reason.isEmpty) {
+                confirm
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.check_circle,
+                                color: Colors.green, size: 45),
+                            onPressed: () {
+                              Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content:
-                                      Text('Please enter a reason before booking.'),
-                                  backgroundColor: Colors.red,
+                                  content: Text('Room booked successfully!'),
+                                  backgroundColor: Colors.green,
                                   duration: Duration(seconds: 2),
                                 ),
                               );
-                              return;
-                            }
-
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Room booked successfully!\nReason: $reason'),
-                                backgroundColor: Colors.green,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                            if (onBooked != null) onBooked();
-                          },
+                              if (onBooked != null) onBooked();
+                            },
+                          ),
+                          const SizedBox(width: 50),
+                          IconButton(
+                            icon: const Icon(Icons.cancel,
+                                color: Colors.red, size: 42),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      )
+                    : Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 50),
-                        IconButton(
-                          icon: const Icon(Icons.cancel,
-                              color: Colors.red, size: 42),
+                        padding: const EdgeInsets.all(8),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back,
+                              color: Colors.black87, size: 36),
                           onPressed: () => Navigator.pop(context),
                         ),
-                      ],
-                    )
-                  : Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
                       ),
-                      padding: const EdgeInsets.all(8),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.black87,
-                          size: 36,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 }

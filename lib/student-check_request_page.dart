@@ -86,6 +86,7 @@ class CheckRequestPage extends StatelessWidget {
                                   ),
                                   child: Row(
                                     children: [
+                                      
                                       // Room image
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(12),
@@ -121,7 +122,7 @@ class CheckRequestPage extends StatelessWidget {
                                             const Text(
                                               'Room 1  (Meeting room)',
                                               style: TextStyle(
-                                                fontSize: 18,
+                                                fontSize: 22,
                                                 color: Colors.black87,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -133,7 +134,7 @@ class CheckRequestPage extends StatelessWidget {
                                             const Text(
                                               '10:00-12:00',
                                               style: TextStyle(
-                                                fontSize: 16,
+                                                fontSize: 20,
                                                 color: Colors.black54,
                                               ),
                                             ),
@@ -171,6 +172,7 @@ class CheckRequestPage extends StatelessWidget {
                                                   'Pending',
                                                   style: TextStyle(
                                                     color: Colors.white,
+                                                    fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -180,66 +182,7 @@ class CheckRequestPage extends StatelessWidget {
                                             const SizedBox(height: 12),
 
                                             // 🔹 Reason for booking section
-                                            Container(
-                                              width: double.infinity,
-                                              padding: const EdgeInsets.all(14),
-                                              decoration: BoxDecoration(
-                                                color: const Color(
-                                                  0xFFD6E6FF,
-                                                ), // Light blue background
-                                                borderRadius:
-                                                    BorderRadius.circular(15),
-                                                border: Border.all(
-                                                  color: const Color(
-                                                    0xFF8BB4FF,
-                                                  ), // Border color — slightly darker blue
-                                                  width: 1.8,
-                                                ),
-                                                boxShadow: const [
-                                                  BoxShadow(
-                                                    color: Color.fromARGB(
-                                                      40,
-                                                      0,
-                                                      0,
-                                                      0,
-                                                    ),
-                                                    blurRadius: 8,
-                                                    offset: Offset(0, 4),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  // Decorative bar or icon on the left
-                                                  Container(
-                                                    width: 5,
-                                                    height: 45,
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  // Text content
-                                                  const Expanded(
-                                                    child: Text(
-                                                      'Reason: Group study discussion ',
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        color: Colors.black87,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        height: 1.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                          
                                           ],
                                         ),
                                       ),

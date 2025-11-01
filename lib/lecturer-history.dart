@@ -5,24 +5,42 @@ class HistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //  Colors 
-    const bgBlue = Color.fromRGBO(207, 224, 255, 1);
-    const cardGrey = Color.fromARGB(255, 176, 189, 197); 
+    // Colors
     const borderGrey = Color.fromARGB(255, 168, 183, 194);
-    const textDark = Color(0xFF0F1621);   
-    const approvedGreen = Color(0xFF18A05B); 
-    const blueSelected = Color(0xFF1E5CD9);
+    const textDark = Color(0xFF0F1621);
+    const approvedGreen = Color(0xFF18A05B);
+    const rejectedRed = Color(0xFFD9534F);
 
-    // Show Time
     final items = <_Booking>[
-      _Booking(date: DateTime(2025, 11, 22), start: '10:00', end: '12:00', room: 'Room 1', requester: 'David Lee', approved: true),
-      _Booking(date: DateTime(2025, 11, 22), start: '13:00', end: '15:00', room: 'Room 1', requester: 'David Lee', approved: true),
-      _Booking(date: DateTime(2025, 11, 22), start: '10:00', end: '12:00', room: 'Room 1', requester: 'David Lee', approved: true),
-      _Booking(date: DateTime(2025, 11, 22), start: '13:00', end: '15:00', room: 'Room 1', requester: 'David Lee', approved: true),
+      _Booking(
+        date: DateTime(2025, 11, 22),
+        start: '10:00',
+        end: '12:00',
+        room: 'Room 1',
+        requester: 'David Lee',
+        approved: true,
+      ),
+      _Booking(
+        date: DateTime(2025, 11, 22),
+        start: '13:00',
+        end: '15:00',
+        room: 'Room 2',
+        requester: 'Anna Kim',
+        approved: false,
+        reason: 'The room will be renovated soon.',
+      ),
+      _Booking(
+        date: DateTime(2025, 11, 23),
+        start: '08:00',
+        end: '10:00',
+        room: 'Room 3',
+        requester: 'John Smith',
+        approved: true,
+      ),
     ];
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -35,22 +53,29 @@ class HistoryPage extends StatelessWidget {
                   'History',
                   style: const TextStyle(
                     color: textDark,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                        color: Color.fromARGB(30, 0, 0, 0),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
 
-            // BG
+            // Blue background area
             Expanded(
               child: Container(
+                width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: bgBlue,
+                  color: Color(0xFFB9D6FF),
                   borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(48),
-                    topLeft: Radius.circular(48),
+                    topLeft: Radius.circular(50),
+                    topRight: Radius.circular(50),
                   ),
                 ),
                 child: ListView.builder(
@@ -58,10 +83,13 @@ class HistoryPage extends StatelessWidget {
                   itemCount: items.length,
                   itemBuilder: (context, i) {
                     final it = items[i];
+                    final statusColor = it.approved ? approvedGreen : rejectedRed;
+                    final statusText = it.approved ? 'Approved' : 'Rejected';
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Date  Time
+                        // Date
                         Padding(
                           padding: const EdgeInsets.only(left: 4, bottom: 8),
                           child: Text(
@@ -70,7 +98,7 @@ class HistoryPage extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               fontStyle: FontStyle.italic,
                               color: textDark,
-                              fontSize: 15,
+                              fontSize: 20,
                             ),
                           ),
                         ),
@@ -78,112 +106,136 @@ class HistoryPage extends StatelessWidget {
                         // Card
                         Container(
                           decoration: BoxDecoration(
-                            color: cardGrey,
+                            color: const Color(0xFFEFF4FF),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: borderGrey),
                             boxShadow: const [
-                              BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 4)),
+                              BoxShadow(
+                                color: Color(0x1A000000),
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              ),
                             ],
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          // Text
                           child: IntrinsicHeight(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // Left
+                                // Left Column (Centered)
                                 Expanded(
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          it.room,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: textDark,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        it.room,
+                                        style: const TextStyle(
+                                          color: textDark,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
                                         ),
-                                        const SizedBox(height: 2),
-                                        const Text(
-                                          '(Meeting room)',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: Color.fromARGB(255, 0, 0, 0),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      const Text(
+                                        '(Meeting room)',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '${it.start}-${it.end}',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: textDark,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w800,
-                                          ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${it.start}-${it.end}',
+                                        style: const TextStyle(
+                                          color: textDark,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
 
-                                //  center line
+                                // Divider
                                 const VerticalDivider(
                                   width: 28,
                                   thickness: 1.4,
                                   color: Colors.black,
                                 ),
 
-                                // Right 
+                                // Right Column (Centered)
                                 Expanded(
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        Align(
-                                          alignment: Alignment.center,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: approvedGreen,
-                                              borderRadius: BorderRadius.circular(16),
-                                            ),
-                                            child: const Text(
-                                              'Approved',
-                                              style: TextStyle(
-                                                color: Color.fromARGB(255, 0, 0, 0),
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                            ),
-                                          ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: statusColor,
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                        const SizedBox(height: 10),
-                                        const Text(
-                                          'requested by',
-                                          style: TextStyle(
-                                            color: Color.fromARGB(255, 0, 0, 0),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            
-                                          ),
-                                        ),
-                                        Text(
-                                          it.requester,
+                                        child: Text(
+                                          statusText,
                                           style: const TextStyle(
-                                            color: textDark,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
+                                            color: Colors.black,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        it.approved ? 'Approved by' : 'Rejected by',
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'Aj. John',
+                                        style: TextStyle(
+                                          color: textDark,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+
+                                      // Show rejection reason if rejected
+                                      if (!it.approved && it.reason != null) ...[
+                                        const SizedBox(height: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFD6E6FF),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: Color(0xFF8BB4FF),
+                                              width: 1.2,
+                                            ),
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                color: Color.fromARGB(30, 0, 0, 0),
+                                                blurRadius: 4,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            'Reason: ${it.reason}',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
                                       ],
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -201,13 +253,11 @@ class HistoryPage extends StatelessWidget {
           ],
         ),
       ),
-
-     
     );
   }
 
   String _fmtDate(DateTime d) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${m[d.month - 1]} ${d.day}, ${d.year}';
   }
 }
@@ -219,6 +269,8 @@ class _Booking {
   final String room;
   final String requester;
   final bool approved;
+  final String? reason;
+
   _Booking({
     required this.date,
     required this.start,
@@ -226,5 +278,6 @@ class _Booking {
     required this.room,
     required this.requester,
     required this.approved,
+    this.reason,
   });
 }
