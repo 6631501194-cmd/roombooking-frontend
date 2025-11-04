@@ -1,5 +1,7 @@
 import 'dart:ui';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'student_detail.dart';
 import 'student-check_request_page.dart';
 import 'student_history.dart';
@@ -11,15 +13,125 @@ class StudentBrowseList extends StatefulWidget {
   State<StudentBrowseList> createState() => _StudentBrowseListState();
 }
 
+class Room {
+  final int id;
+  final String name;
+  final String type;
+  final String status;
+  final String image; // can be URL, asset path, or base64 data URI
+
+  Room({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.status,
+    required this.image,
+  });
+
+  factory Room.fromJson(Map<String, dynamic> json) {
+    return Room(
+      id: json['room_id'] is int
+          ? json['room_id']
+          : int.tryParse('${json['room_id']}') ?? 0,
+      name: json['room_name']?.toString() ?? 'Unknown',
+      type: json['room_type']?.toString() ?? '',
+      status: json['room_status']?.toString() ?? '',
+      image: json['image']?.toString() ?? '',
+    );
+  }
+}
+
 class _StudentBrowseListState extends State<StudentBrowseList> {
-  final List<Map<String, String>> rooms = [
-    {"name": "Room 1", "type": "Meeting room", "image": "assets/images/studyRoom1.png"},
-    {"name": "Room 2", "type": "Meeting room", "image": "assets/images/studyRoom2.jpg"},
-    {"name": "Room 3", "type": "Seminar room", "image": "assets/images/seminarRoom.jpeg"},
-    {"name": "Room 4", "type": "Multimedia room", "image": "assets/images/multimediaRoom1.jpeg"},
-  ];
+  List<Room> rooms = [];
+  bool _isLoading = true;
+  String? _error;
+
+  // Backend base URL. If you run on Android emulator use 10.0.2.2:3000
+  static const String backendBase = 'http://localhost:3000';
 
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRooms();
+  }
+
+  Future<void> _fetchRooms() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final uri = Uri.parse('$backendBase/rooms');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (resp.statusCode == 200) {
+        final List<dynamic> data = json.decode(resp.body);
+        rooms = data
+            .map((e) => Room.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        _error = 'Server error: ${resp.statusCode}';
+      }
+    } catch (e) {
+      _error = 'Failed to load rooms: $e';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildRoomImage(Room room) {
+    final img = room.image;
+    if (img.isEmpty) {
+      return Container(
+        color: const Color(0xFFE5EBFC),
+        child: const Icon(
+          Icons.image_not_supported,
+          color: Colors.grey,
+          size: 40,
+        ),
+      );
+    }
+
+    if (img.startsWith('http')) {
+      return Image.network(
+        img,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) => Container(
+          color: const Color(0xFFE5EBFC),
+          child: const Icon(Icons.broken_image, color: Colors.grey),
+        ),
+      );
+    }
+
+    if (img.startsWith('data:image')) {
+      try {
+        final base64Str = img.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(bytes, fit: BoxFit.cover);
+      } catch (_) {
+        return Container(
+          color: const Color(0xFFE5EBFC),
+          child: const Icon(Icons.broken_image, color: Colors.grey),
+        );
+      }
+    }
+
+    // Fallback: treat as asset path
+    return Image.asset(
+      img,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stack) => Container(
+        color: const Color(0xFFE5EBFC),
+        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+      ),
+    );
+  }
 
   void _showLogoutDialog() {
     showDialog(
@@ -34,7 +146,10 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
               borderRadius: BorderRadius.circular(20),
               side: const BorderSide(color: Color(0xFF3A7AFE), width: 3),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 20,
+              horizontal: 20,
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -58,7 +173,11 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                           color: Colors.green,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                     ),
                     GestureDetector(
@@ -71,7 +190,11 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                     ),
                   ],
@@ -114,112 +237,124 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Column(
-                  children: rooms.map((room) {
-                    return Container(
-                      width: 350,
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF4FF),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 6,
-                            offset: const Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  room["image"]!,
-                                  width: 200,
-                                  height: 110,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 200,
-                                      height: 110,
-                                      color: const Color(0xFFE5EBFC),
-                                      child: const Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey,
-                                        size: 40,
+                if (_isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          _error!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: _fetchRooms,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Column(
+                    children: rooms.map((room) {
+                      return Container(
+                        width: 350,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF4FF),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 6,
+                              offset: const Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: SizedBox(
+                                    width: 200,
+                                    height: 110,
+                                    child: _buildRoomImage(room),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => RoomDetailScreen(
+                                          roomName: room.name,
+                                          roomType: room.type,
+                                          imagePath: room.image,
+                                        ),
                                       ),
                                     );
                                   },
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => RoomDetailScreen(
-                                        roomName: room["name"] ?? "",
-                                        roomType: room["type"] ?? "",
-                                        imagePath: room["image"] ?? "",
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.info_outline,
-                                  size: 20,
-                                  color: Colors.white,
-                                ),
-                                label: const Text(
-                                  "Detail",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
+                                  icon: const Icon(
+                                    Icons.info_outline,
+                                    size: 20,
                                     color: Colors.white,
                                   ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF222558),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 12,
+                                  label: const Text(
+                                    "Detail",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF222558),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
                                   ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              room.name,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            room["name"]!,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "(${room["type"]!})",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.black87,
+                            const SizedBox(height: 4),
+                            Text(
+                              "(${room.type})",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.black87,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 const SizedBox(height: 24),
               ],
             ),
@@ -254,8 +389,14 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
         selectedItemColor: const Color(0xFF1E3A8A),
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Requests"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt),
+            label: "Browse List",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: "Check Requests",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
         ],
       ),
@@ -264,7 +405,10 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
           children: [
             if (showHeader)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 14,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
