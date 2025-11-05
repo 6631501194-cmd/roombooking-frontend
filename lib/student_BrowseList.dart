@@ -9,17 +9,13 @@ import 'student-check_request_page.dart';
 import 'student_history.dart';
 
 class StudentBrowseList extends StatefulWidget {
-  /// Optional authenticated user id. If provided, it will be forwarded to the
-  /// `RoomDetailScreen` so bookings are sent with the correct identity.
   final int? currentUserId;
-  
-  /// ✅ ADDED: The username passed from the login screen
   final String? username;
 
   const StudentBrowseList({
-    super.key, 
+    super.key,
     this.currentUserId,
-    this.username, // ✅ ADDED
+    this.username,
   });
 
   @override
@@ -55,13 +51,16 @@ class Room {
 }
 
 class _StudentBrowseListState extends State<StudentBrowseList> {
-  List<Room> rooms = [];
+  // ✅ 1. State variables for search
+  List<Room> rooms = []; // This is the master list
+  List<Room> filteredRooms = []; // This is the list we display
+  final TextEditingController _searchController = TextEditingController();
+
   bool _isLoading = true;
   String? _error;
   int _selectedIndex = 0;
 
   String get _backendBase {
-    // Use emulator host for Android AVD; otherwise localhost.
     if (Platform.isAndroid) return 'http://10.0.2.2:3000';
     return 'http://localhost:3000';
   }
@@ -70,6 +69,39 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
   void initState() {
     super.initState();
     _fetchRooms();
+    // ✅ 2. Add a listener to update the UI (for the 'clear' button)
+    _searchController.addListener(() {
+      setState(() {}); // Redraws UI to show/hide the 'X' button
+    });
+  }
+
+  @override
+  void dispose() {
+    // ✅ 3. Clean up the controller
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ✅ 4. New function to handle the search logic
+  void _filterRooms(String query) {
+    final String lowerQuery = query.toLowerCase();
+
+    setState(() {
+      if (lowerQuery.isEmpty) {
+        // If search is empty, show all rooms
+        filteredRooms = List.from(rooms);
+      } else {
+        // Filter the master list 'rooms'
+        filteredRooms = rooms.where((room) {
+          final String roomNameLower = room.name.toLowerCase();
+          final String roomTypeLower = room.type.toLowerCase();
+
+          // Check if either name or type contains the query
+          return roomNameLower.contains(lowerQuery) ||
+                 roomTypeLower.contains(lowerQuery);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _fetchRooms() async {
@@ -83,9 +115,13 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
       final resp = await http.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode == 200) {
         final List<dynamic> data = json.decode(resp.body) as List<dynamic>;
-        rooms = data
-            .map((e) => Room.fromJson(e as Map<String, dynamic>))
-            .toList();
+        setState(() {
+          rooms = data
+              .map((e) => Room.fromJson(e as Map<String, dynamic>))
+              .toList();
+          // ✅ 5. Initialize the filtered list with all rooms
+          filteredRooms = List.from(rooms);
+        });
       } else {
         _error = resp.body.isNotEmpty
             ? resp.body
@@ -224,12 +260,26 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  child: const TextField(
+                  // ✅ 6. Updated the TextField
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _filterRooms, // Call filter function
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Room',
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Search by room name or type...',
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15),
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                      // Add a clear button
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterRooms(''); // Reset the filter
+                              },
+                            )
+                          : null,
                     ),
                   ),
                 ),
@@ -258,9 +308,20 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                       ],
                     ),
                   )
+                // ✅ 7. Check filteredRooms instead of rooms
+                else if (filteredRooms.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text(
+                      'No rooms found matching your search.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                  )
                 else
                   Column(
-                    children: rooms.map((room) {
+                    // ✅ 8. Map filteredRooms instead of rooms
+                    children: filteredRooms.map((room) {
                       final fullImageUrl = room.imageUrl.startsWith('http')
                           ? room.imageUrl
                           : '$_backendBase${room.imageUrl}';
@@ -292,30 +353,28 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                                 ),
                                 const SizedBox(width: 16),
                                 ElevatedButton.icon(
-                                  // ✅✅✅ FIXED ONPRESSED ✅✅✅
                                   onPressed: () {
-                                    // The new RoomDetailScreen requires a user ID to work.
-                                    // We check for it here before navigating.
                                     if (widget.currentUserId == null) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         const SnackBar(
-                                          content: Text('Error: You must be logged in to view details.'),
+                                          content: Text(
+                                              'Error: You must be logged in to view details.'),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
-                                      return; // Don't navigate
+                                      return;
                                     }
 
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => RoomDetailScreen(
-                                          // Pass all the required parameters
                                           roomId: room.id,
                                           userId: widget.currentUserId!,
                                           roomName: room.name,
                                           roomType: room.type,
-                                          imageUrl: fullImageUrl, // Use the correct parameter name
+                                          imageUrl: fullImageUrl,
                                         ),
                                       ),
                                     );
@@ -378,15 +437,23 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
   }
 
   Widget _buildBody() {
+    final int safeUserId = widget.currentUserId ?? 0;
+
     switch (_selectedIndex) {
       case 0:
         return _buildBrowsePage();
       case 1:
-        // Note: You may also need to pass widget.currentUserId to CheckRequestPage
-        return const Expanded(child: CheckRequestPage());
+        return Expanded(
+          child: CheckRequestPage(
+            userId: safeUserId,
+          ),
+        );
       case 2:
-        // Note: You may also need to pass widget.currentUserId to HistoryPage
-        return const Expanded(child: HistoryPage());
+        return Expanded(
+          child: HistoryPage(
+            userId: safeUserId,
+          ),
+        );
       default:
         return _buildBrowsePage();
     }
@@ -430,12 +497,10 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        // ✅ REMOVED 'const' from children
                         children: [
                           Text(
-                            // ✅ MADE USERNAME DYNAMIC
                             "Hello, ${widget.username ?? 'User'}",
-                            style: const TextStyle( // Added const here
+                            style: const TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
@@ -448,7 +513,7 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                               ],
                             ),
                           ),
-                          const Text( // Added const here
+                          const Text(
                             "Welcome to Room Reservation",
                             style: TextStyle(
                               fontSize: 25,
