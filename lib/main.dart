@@ -33,6 +33,7 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -42,7 +43,7 @@ class WelcomeScreen extends StatelessWidget {
             left: 0,
             child: Image.asset(
               'assets/images/first.jpg',
-              width: 413,
+              width: width,
               fit: BoxFit.cover,
             ),
           ),

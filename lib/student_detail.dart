@@ -1,15 +1,46 @@
+import 'dart:convert';
+import 'dart:io'; // 1. IMPORT 'dart:io'
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+// A simple class to model the API response for a time slot
+class TimeSlot {
+  final int slotId;
+  final String time;
+  final String status;
+  final bool canBook;
+
+  TimeSlot({
+    required this.slotId,
+    required this.time,
+    required this.status,
+    required this.canBook,
+  });
+
+  factory TimeSlot.fromJson(Map<String, dynamic> json) {
+    return TimeSlot(
+      slotId: json['slotId'],
+      time: json['time'],
+      status: json['status'],
+      canBook: json['canBook'],
+    );
+  }
+}
 
 class RoomDetailScreen extends StatefulWidget {
+  final int roomId;
+  final int userId; // Assuming userId is passed after login
   final String roomName;
   final String roomType;
-  final String imagePath;
+  final String imageUrl; // Changed from imagePath to imageUrl
 
   const RoomDetailScreen({
     super.key,
+    required this.roomId,
+    required this.userId,
     required this.roomName,
     required this.roomType,
-    required this.imagePath,
+    required this.imageUrl,
   });
 
   @override
@@ -17,11 +48,118 @@ class RoomDetailScreen extends StatefulWidget {
 }
 
 class _RoomDetailScreenState extends State<RoomDetailScreen> {
-  bool hasBooking = false;
+  bool _isLoading = true;
+  String? _errorMsg;
+  List<TimeSlot> _slots = [];
 
-  // ✅ booking callback
-  void onBooked() {
-    setState(() => hasBooking = true);
+  // 2. REPLACED hardcoded string with a dynamic getter
+  String get _baseUrl {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3000';
+    }
+    // iOS Simulator and web/desktop use localhost
+    return 'http://localhost:3000';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTimeSlots();
+  }
+
+  Future<void> _fetchTimeSlots() async {
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
+
+    try {
+      // It will now use the correct URL for iOS
+      final response = await http
+          .get(Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final List<TimeSlot> parsedSlots =
+            data.map((json) => TimeSlot.fromJson(json)).toList();
+        
+        setState(() {
+          _slots = parsedSlots;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMsg = 'Failed to load slots: ${response.body}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMsg = 'Error connecting to server: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _bookSlot(int slotId) async {
+    try {
+      final response = await http.post(
+        // It will also use the correct URL for iOS here
+        Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots/$slotId/book'),
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        body: json.encode({'userId': widget.userId}),
+      );
+
+      if (response.statusCode == 201) {
+        // Success
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Booking created! Please wait for approval.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        _fetchTimeSlots(); // Refresh the list after booking
+      } else {
+        // Handle API errors (409, 400, etc.)
+        final Map<String, dynamic> errorData = json.decode(response.body);
+        final String message = errorData['message'] ?? 'Failed to book slot.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        _fetchTimeSlots(); // Refresh list even on error (e.g., "slot taken")
+      }
+    } catch (e) {
+      // Handle network errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Color _getColorForStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'available':
+        return const Color(0xFF00C896);
+      case 'pending':
+        return const Color(0xFFFFA500);
+      case 'reserved':
+        return const Color(0xFF008CBA);
+      case 'expired':
+        return Colors.grey.shade600;
+      case 'disabled':
+        return Colors.red.shade400;
+      default:
+        return Colors.grey;
+    }
   }
 
   @override
@@ -86,11 +224,32 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          widget.imagePath,
+                        child: Image.network(
+                          widget.imageUrl,
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              height: 200,
+                              color: Colors.grey.shade300,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              color: Colors.grey.shade300,
+                              child: const Icon(
+                                Icons.image_not_supported_rounded,
+                                color: Colors.grey,
+                                size: 50,
+                              ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -123,18 +282,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                       ),
                       const SizedBox(height: 15),
 
-                      // Time Slots
-                      buildTimeSlot('8:00-10:00', 'Available',
-                          const Color(0xFF00C896), true, onBooked),
-                      const SizedBox(height: 10),
-                      buildTimeSlot('10:00-12:00', 'Pending',
-                          const Color(0xFFFFA500), false, null),
-                      const SizedBox(height: 10),
-                      buildTimeSlot('13:00-15:00', 'Reserved',
-                          const Color(0xFF008CBA), false, null),
-                      const SizedBox(height: 10),
-                      buildTimeSlot('15:00-17:00', 'Reserved',
-                          const Color(0xFF008CBA), false, null),
+                      // Dynamic Time Slot List
+                      _buildSlotList(),
                     ],
                   ),
                 ),
@@ -146,13 +295,58 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     );
   }
 
-  Widget buildTimeSlot(
-    String time,
-    String status,
-    Color statusColor,
-    bool canBook,
-    VoidCallback? onBooked,
-  ) {
+  Widget _buildSlotList() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_errorMsg != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            _errorMsg!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    if (_slots.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text(
+            'No time slots available for this room.',
+            style: TextStyle(color: Colors.black54, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _slots.length,
+      itemBuilder: (context, index) {
+        final slot = _slots[index];
+        return buildTimeSlot(slot);
+      },
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+    );
+  }
+
+  Widget buildTimeSlot(TimeSlot slot) {
+    final statusColor = _getColorForStatus(slot.status);
+    final String statusText =
+        slot.status[0].toUpperCase() + slot.status.substring(1);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -172,7 +366,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              time,
+              slot.time,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -187,7 +381,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              status,
+              statusText,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -197,17 +391,24 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (canBook) {
+              if (slot.canBook) {
                 showBookingDialog(
                   'Are you sure to book this room?',
                   true,
-                  onBooked,
+                  () => _bookSlot(slot.slotId),
                 );
               } else {
+                String message = "This room is not available.\nPlease try another slot.";
+                if (slot.status == 'disabled') {
+                  message = "This room is under maintenance.\nCan’t book it";
+                } else if (slot.status == 'expired') {
+                   message = "This time slot has already passed.";
+                } else if (slot.status == 'pending' || slot.status == 'reserved') {
+                  message = "This time slot is already ${slot.status}.";
+                }
+                
                 showBookingDialog(
-                  status == "Maintenance"
-                      ? "This room is under maintenance.\nCan’t book it"
-                      : "This room is not available.\nPlease try another slot.",
+                  message,
                   false,
                   null,
                 );
@@ -215,7 +416,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  canBook ? const Color(0xFF222558) : Colors.grey.shade400,
+                  slot.canBook ? const Color(0xFF222558) : Colors.grey.shade400,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -261,7 +462,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-
                 confirm
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -271,14 +471,9 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                 color: Colors.green, size: 45),
                             onPressed: () {
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Room booked successfully!'),
-                                  backgroundColor: Colors.green,
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                              if (onBooked != null) onBooked();
+                              if (onBooked != null) {
+                                onBooked();
+                              }
                             },
                           ),
                           const SizedBox(width: 50),

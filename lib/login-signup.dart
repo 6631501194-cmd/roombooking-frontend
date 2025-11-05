@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'login-signin.dart'; // imports LoginPage for navigation
+import 'package:http/http.dart' as http;
+import 'login-signin.dart';
 
 class LoginSignup extends StatefulWidget {
   const LoginSignup({super.key});
@@ -9,165 +11,162 @@ class LoginSignup extends StatefulWidget {
 }
 
 class _LoginSignupState extends State<LoginSignup> {
-  final TextEditingController _usernameCtrl = TextEditingController();
-  final TextEditingController _emailCtrl = TextEditingController();
-  final TextEditingController _passwordCtrl = TextEditingController();
-  final TextEditingController _confirmCtrl = TextEditingController();
+  // Change this to match your backend address for the platform you're running on:
+  // - Android emulator (AVD): 'http://10.0.2.2:3000'
+  // - iOS simulator / desktop: 'http://localhost:3000'
+  // - Physical device: 'http://192.168.x.y:3000'
+  static const String backendBase = 'http://localhost:3000';
 
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  // Keep default role as 'student' (sent to backend) but do not expose role selector here.
+  String _role = 'student';
+  // Confirm password field controller
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+  bool _isLoading = false;
+  bool _obscure = true;
 
   @override
   void dispose() {
-    _usernameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    _confirmCtrl.dispose();
+    _emailController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _showMessage(String text, {Color bg = Colors.red}) {
+  void _showMessage(String message, {Color background = Colors.red}) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text), backgroundColor: bg, duration: const Duration(seconds: 2)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: background,
+        duration: const Duration(seconds: 2),
+      ),
     );
-  }
-
-  bool _validateInputs() {
-    final username = _usernameCtrl.text.trim();
-    final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text;
-    final confirm = _confirmCtrl.text;
-
-    if (username.isEmpty) {
-      _showMessage('Please enter a username.');
-      return false;
-    }
-    if (email.isEmpty) {
-      _showMessage('Please enter an email.');
-      return false;
-    }
-    // very simple email check
-    if (!email.contains('@') || !email.contains('.')) {
-      _showMessage('Please enter a valid email address.');
-      return false;
-    }
-    if (password.isEmpty) {
-      _showMessage('Please enter a password.');
-      return false;
-    }
-    if (confirm.isEmpty) {
-      _showMessage('Please confirm your password.');
-      return false;
-    }
-    if (password != confirm) {
-      _showMessage('Passwords do not match.');
-      return false;
-    }
-    return true;
   }
 
   Future<void> _onCreateAccountPressed() async {
-    if (!_validateInputs()) return;
+    final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+    final confirm = _confirmPasswordController.text;
 
-    // Show success dialog
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: const Color(0xFFE6F0FF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 22.0, horizontal: 18.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 72),
-                const SizedBox(height: 14),
-                const Text(
-                  'Registration completed!',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your account has been created successfully.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton(
+    if (email.isEmpty || username.isEmpty || password.isEmpty) {
+      _showMessage('Please complete all fields.');
+      return;
+    }
+
+    if (password != confirm) {
+      _showMessage('Password and confirm password do not match.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final uri = Uri.parse('$backendBase/api/register');
+      final resp = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'email': email,
+              'username': username,
+              'password': password,
+              'role': _role,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        // success: show a confirmation dialog and go back to login
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Registration successful'),
+              content: const Text(
+                'Your account has been created. Please login.',
+              ),
+              actions: [
+                TextButton(
                   onPressed: () {
-                    Navigator.pop(context); // close dialog
-                    // navigate to login page
-                    Navigator.pushReplacement(
-                      context,
+                    Navigator.of(context).pop(); // close dialog
+                    Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (_) => const LoginPage()),
                     );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1D1F5E),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                  ),
-                  child: const Text('Go to Login', style: TextStyle(color: Colors.white)),
+                  child: const Text('OK'),
                 ),
               ],
-            ),
-          ),
+            );
+          },
         );
-      },
-    );
-
-    // Optionally clear form fields
-    _usernameCtrl.clear();
-    _emailCtrl.clear();
-    _passwordCtrl.clear();
-    _confirmCtrl.clear();
+      } else {
+        final msg = resp.body.isNotEmpty
+            ? resp.body
+            : 'Registration failed: ${resp.statusCode}';
+        _showMessage(msg);
+      }
+    } catch (e) {
+      _showMessage('Registration failed: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final topImageHeight = 260.0;
+    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
-        clipBehavior: Clip.none,
         children: [
-          // background form container
-          Positioned.fill(
-            top: topImageHeight - 30,
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Image.asset(
+              'assets/images/first.jpg',
+              width: MediaQuery.of(context).size.width,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
             child: Container(
+              height: screenHeight * 0.72,
+              width: double.infinity,
               decoration: const BoxDecoration(
                 color: Color(0xFFB9D6FF),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(40),
-                  topRight: Radius.circular(40),
+                  topLeft: Radius.circular(60),
+                  topRight: Radius.circular(50),
                 ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 25),
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 5),
-                    // Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Create\nAccount',
+                          'Register',
                           style: TextStyle(
-                            fontSize: 45,
+                            fontSize: 50,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1D1F5E),
+                            color: Colors.black,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            // Go back to previous screen (Welcome)
-                            Navigator.pop(context);
-                          },
+                        InkWell(
+                          onTap: () => Navigator.pop(context),
+                          borderRadius: BorderRadius.circular(20),
                           child: Container(
                             height: 50,
                             width: 50,
@@ -186,164 +185,156 @@ class _LoginSignupState extends State<LoginSignup> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 30),
-
-                    // Username
-                    _buildTextFieldController('Username', controller: _usernameCtrl),
                     const SizedBox(height: 10),
-
-                    // Email
-                    _buildTextFieldController('Email', controller: _emailCtrl, keyboardType: TextInputType.emailAddress),
-                    const SizedBox(height: 10),
-
-                    // Password
-                    _buildTextFieldController(
-                      'Password',
-                      controller: _passwordCtrl,
-                      obscureText: _obscurePassword,
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    const Text(
+                      'Create a new account',
+                      style: TextStyle(fontSize: 20, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 22),
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        hintText: 'Email',
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black54),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-
-                    // Confirm Password
-                    _buildTextFieldController(
-                      'Confirm Password',
-                      controller: _confirmCtrl,
-                      obscureText: _obscureConfirm,
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _usernameController,
+                      decoration: InputDecoration(
+                        hintText: 'Username',
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black54),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 15),
-
-                    // Create Account Button
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscure,
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscure
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black54),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Confirm password field (keeps UI simple — role remains default 'student')
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscure,
+                      decoration: InputDecoration(
+                        hintText: 'Confirm Password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscure
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.black54),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       height: 60,
                       child: ElevatedButton(
-                        onPressed: _onCreateAccountPressed,
+                        onPressed: _isLoading ? null : _onCreateAccountPressed,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1D1F5E),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(fontSize: 17, color: Colors.white),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Register',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-
-                    // Cancel
+                    const SizedBox(height: 12),
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.black54),
+                          'Back to Login',
+                          style: TextStyle(color: Colors.black54, fontSize: 16),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 1),
-
-                    // Login Text
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                          );
-                        },
-                        child: RichText(
-                          text: const TextSpan(
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontSize: 16,
-                            ),
-                            children: [
-                              TextSpan(text: "Already have an account? "),
-                              TextSpan(
-                                text: 'Login !!!',
-                                style: TextStyle(
-                                  color: Color(0xFF1D1F5E),
-                                  decoration: TextDecoration.underline,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
             ),
           ),
-
-          // top image
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(80)),
-              child: Image.asset(
-                'assets/images/second1.jpg',
-                width: double.infinity,
-                height: topImageHeight,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) {
-                  return Container(
-                    height: topImageHeight,
-                    color: Colors.grey.shade200,
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // SafeArea spacer (top)
-          Positioned(
-            top: MediaQuery.of(context).padding.top,
-            left: 0,
-            right: 0,
-            child: const SizedBox(),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTextFieldController(
-    String hint, {
-    required TextEditingController controller,
-    bool obscureText = false,
-    Widget? suffixIcon,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: hint,
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
       ),
     );
   }

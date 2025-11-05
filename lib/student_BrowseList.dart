@@ -1,13 +1,26 @@
-import 'dart:ui';
+import 'dart:io';
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'student_detail.dart';
 import 'student-check_request_page.dart';
 import 'student_history.dart';
 
 class StudentBrowseList extends StatefulWidget {
-  const StudentBrowseList({super.key});
+  /// Optional authenticated user id. If provided, it will be forwarded to the
+  /// `RoomDetailScreen` so bookings are sent with the correct identity.
+  final int? currentUserId;
+  
+  /// ✅ ADDED: The username passed from the login screen
+  final String? username;
+
+  const StudentBrowseList({
+    super.key, 
+    this.currentUserId,
+    this.username, // ✅ ADDED
+  });
 
   @override
   State<StudentBrowseList> createState() => _StudentBrowseListState();
@@ -18,25 +31,25 @@ class Room {
   final String name;
   final String type;
   final String status;
-  final String image; // can be URL, asset path, or base64 data URI
+  final String imageUrl;
 
   Room({
     required this.id,
     required this.name,
     required this.type,
     required this.status,
-    required this.image,
+    required this.imageUrl,
   });
 
   factory Room.fromJson(Map<String, dynamic> json) {
     return Room(
       id: json['room_id'] is int
-          ? json['room_id']
+          ? json['room_id'] as int
           : int.tryParse('${json['room_id']}') ?? 0,
       name: json['room_name']?.toString() ?? 'Unknown',
       type: json['room_type']?.toString() ?? '',
       status: json['room_status']?.toString() ?? '',
-      image: json['image']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString() ?? '',
     );
   }
 }
@@ -45,11 +58,13 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
   List<Room> rooms = [];
   bool _isLoading = true;
   String? _error;
-
-  // Backend base URL. If you run on Android emulator use 10.0.2.2:3000
-  static const String backendBase = 'http://localhost:3000';
-
   int _selectedIndex = 0;
+
+  String get _backendBase {
+    // Use emulator host for Android AVD; otherwise localhost.
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000';
+  }
 
   @override
   void initState() {
@@ -64,72 +79,54 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
     });
 
     try {
-      final uri = Uri.parse('$backendBase/rooms');
+      final uri = Uri.parse('$_backendBase/api/rooms');
       final resp = await http.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode == 200) {
-        final List<dynamic> data = json.decode(resp.body);
+        final List<dynamic> data = json.decode(resp.body) as List<dynamic>;
         rooms = data
             .map((e) => Room.fromJson(e as Map<String, dynamic>))
             .toList();
       } else {
-        _error = 'Server error: ${resp.statusCode}';
+        _error = resp.body.isNotEmpty
+            ? resp.body
+            : 'Server error: ${resp.statusCode}';
       }
     } catch (e) {
       _error = 'Failed to load rooms: $e';
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Widget _buildRoomImage(Room room) {
-    final img = room.image;
-    if (img.isEmpty) {
-      return Container(
-        color: const Color(0xFFE5EBFC),
-        child: const Icon(
-          Icons.image_not_supported,
-          color: Colors.grey,
-          size: 40,
-        ),
-      );
-    }
-
-    if (img.startsWith('http')) {
-      return Image.network(
-        img,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stack) => Container(
-          color: const Color(0xFFE5EBFC),
-          child: const Icon(Icons.broken_image, color: Colors.grey),
-        ),
-      );
-    }
-
-    if (img.startsWith('data:image')) {
-      try {
-        final base64Str = img.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(bytes, fit: BoxFit.cover);
-      } catch (_) {
-        return Container(
-          color: const Color(0xFFE5EBFC),
-          child: const Icon(Icons.broken_image, color: Colors.grey),
-        );
-      }
-    }
-
-    // Fallback: treat as asset path
-    return Image.asset(
-      img,
+  Widget _roomImage(Room room) {
+    final img = room.imageUrl;
+    final src = img.startsWith('http') ? img : '$_backendBase$img';
+    return Image.network(
+      src,
+      width: 200,
+      height: 110,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stack) => Container(
-        color: const Color(0xFFE5EBFC),
-        child: const Icon(Icons.image_not_supported, color: Colors.grey),
-      ),
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 200,
+          height: 110,
+          color: const Color(0xFFE5EBFC),
+          child: const Icon(
+            Icons.image_not_supported,
+            color: Colors.grey,
+            size: 40,
+          ),
+        );
+      },
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          width: 200,
+          height: 110,
+          color: const Color(0xFFE5EBFC),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
     );
   }
 
@@ -264,6 +261,10 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                 else
                   Column(
                     children: rooms.map((room) {
+                      final fullImageUrl = room.imageUrl.startsWith('http')
+                          ? room.imageUrl
+                          : '$_backendBase${room.imageUrl}';
+
                       return Container(
                         width: 350,
                         padding: const EdgeInsets.all(12),
@@ -287,22 +288,34 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: SizedBox(
-                                    width: 200,
-                                    height: 110,
-                                    child: _buildRoomImage(room),
-                                  ),
+                                  child: _roomImage(room),
                                 ),
                                 const SizedBox(width: 16),
                                 ElevatedButton.icon(
+                                  // ✅✅✅ FIXED ONPRESSED ✅✅✅
                                   onPressed: () {
+                                    // The new RoomDetailScreen requires a user ID to work.
+                                    // We check for it here before navigating.
+                                    if (widget.currentUserId == null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Error: You must be logged in to view details.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return; // Don't navigate
+                                    }
+
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => RoomDetailScreen(
+                                          // Pass all the required parameters
+                                          roomId: room.id,
+                                          userId: widget.currentUserId!,
                                           roomName: room.name,
                                           roomType: room.type,
-                                          imagePath: room.image,
+                                          imageUrl: fullImageUrl, // Use the correct parameter name
                                         ),
                                       ),
                                     );
@@ -369,8 +382,10 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
       case 0:
         return _buildBrowsePage();
       case 1:
+        // Note: You may also need to pass widget.currentUserId to CheckRequestPage
         return const Expanded(child: CheckRequestPage());
       case 2:
+        // Note: You may also need to pass widget.currentUserId to HistoryPage
         return const Expanded(child: HistoryPage());
       default:
         return _buildBrowsePage();
@@ -415,10 +430,12 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        // ✅ REMOVED 'const' from children
+                        children: [
                           Text(
-                            "Hello, Oscar",
-                            style: TextStyle(
+                            // ✅ MADE USERNAME DYNAMIC
+                            "Hello, ${widget.username ?? 'User'}",
+                            style: const TextStyle( // Added const here
                               fontSize: 34,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
@@ -431,7 +448,7 @@ class _StudentBrowseListState extends State<StudentBrowseList> {
                               ],
                             ),
                           ),
-                          Text(
+                          const Text( // Added const here
                             "Welcome to Room Reservation",
                             style: TextStyle(
                               fontSize: 25,
