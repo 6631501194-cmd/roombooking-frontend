@@ -59,6 +59,14 @@ class _LoginSignupState extends State<LoginSignup> {
       return;
     }
 
+    // ✅ FIXED: ADDED EMAIL VALIDATION CHECK
+    final emailRegex = RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+$");
+    if (!emailRegex.hasMatch(email)) {
+      _showMessage('Please enter a valid email address.');
+      return;
+    }
+    // ✅ END OF FIX
+
     if (password != confirm) {
       _showMessage('Password and confirm password do not match.');
       return;

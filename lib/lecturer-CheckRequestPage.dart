@@ -1,80 +1,177 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/lecturer-history.dart';
-import 'lecturer_dashboard.dart';
-import 'lecture_BrowseList.dart';
+import 'package:http/http.dart' as http;
 
-void main() {
-  runApp(const MyApp());
-}
+// 1. A model to hold the pending booking data
+class PendingRequest {
+  final int bookingId;
+  final String roomName;
+  final String roomType;
+  final String time;
+  final String requesterName;
+  final String imageUrl;
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  PendingRequest({
+    required this.bookingId,
+    required this.roomName,
+    required this.roomType,
+    required this.time,
+    required this.requesterName,
+    required this.imageUrl,
+  });
 
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: MainNavigation(),
+  factory PendingRequest.fromJson(Map<String, dynamic> json) {
+    return PendingRequest(
+      bookingId: json['bookingId'],
+      roomName: json['roomName'],
+      roomType: json['roomType'],
+      time: json['time'],
+      requesterName: json['requesterName'],
+      imageUrl: json['imageUrl'],
     );
   }
 }
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
-
-  @override
-  State<MainNavigation> createState() => _MainNavigationState();
-}
-
-class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 2; 
-  final List<Widget> _pages = const [
-    LectureDashboard(),
-    LectureBrowseList(),
-    CheckRequestPage(),
-    HistoryPage(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF1E3A8A),
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Dashboard"),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Browse List"),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: "Check Request"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
-        ],
-      ),
-    );
-  }
-}
-
+// 2. This is the correct CheckRequestPage widget
 class CheckRequestPage extends StatefulWidget {
-  const CheckRequestPage({super.key});
+  // 3. It needs the lecturer's ID to approve/reject
+  final int userId;
+  const CheckRequestPage({super.key, required this.userId});
 
   @override
   State<CheckRequestPage> createState() => _CheckRequestPageState();
 }
 
 class _CheckRequestPageState extends State<CheckRequestPage> {
-  final List<Map<String, String>> bookedRooms = [
-    {'name': 'Room 1', 'type': 'Meeting room', 'time': '08:00 - 10:00'},
-    {'name': 'Room 2', 'type': 'Study room', 'time': '10:00 - 12:00'},
-    {'name': 'Room 3', 'type': 'Conference room', 'time': '13:00 - 15:00'},
-  ];
+  // 4. Removed static list, added state variables
+  List<PendingRequest> _pendingRequests = [];
+  bool _isLoading = true;
+  String? _error;
+
+  // 5. Added URL getter
+  String get _baseUrl {
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000'; // For iOS Simulator
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPendingRequests();
+  }
+
+  // 6. Function to get all pending requests
+  Future<void> _fetchPendingRequests() async {
+    // Safety check: if userId is 0, it means it wasn't passed correctly.
+    if (widget.userId == 0) {
+      setState(() {
+        _isLoading = false;
+        _error = "Error: No user ID was provided to this page.";
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final uri = Uri.parse('$_baseUrl/api/bookings/pending');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+
+      if (resp.statusCode == 200) {
+        final List<dynamic> data = json.decode(resp.body);
+        if (mounted) {
+          setState(() {
+            _pendingRequests =
+                data.map((json) => PendingRequest.fromJson(json)).toList();
+          });
+        }
+      } else {
+         if (mounted) {
+          setState(() => _error = "Failed to load requests: ${resp.body}");
+         }
+      }
+    } catch (e) {
+       if (mounted) {
+        setState(() => _error = "Error connecting to server: ${e.toString()}");
+       }
+    } finally {
+       if (mounted) {
+        setState(() => _isLoading = false);
+       }
+    }
+  }
+
+  // 7. Function to approve a booking
+  Future<void> _approveBooking(int bookingId) async {
+    final uri = Uri.parse('$_baseUrl/api/bookings/$bookingId/approve');
+    try {
+      final resp = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'approverId': widget.userId}), // Pass lecturer's ID
+      );
+
+      if (resp.statusCode == 200) {
+        _fetchPendingRequests(); // Refresh the list
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Booking approved!'),
+                backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        throw Exception(resp.body);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error approving: ${e.toString()}'),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // 8. Function to reject a booking
+  Future<void> _rejectBooking(int bookingId, String reason) async {
+    final uri = Uri.parse('$_baseUrl/api/bookings/$bookingId/reject');
+    try {
+      final resp = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'approverId': widget.userId, // Pass lecturer's ID
+          'reason': reason,
+        }),
+      );
+
+      if (resp.statusCode == 200) {
+        _fetchPendingRequests(); // Refresh the list
+         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Booking rejected.'), backgroundColor: Colors.orange),
+          );
+         }
+      } else {
+        throw Exception(resp.body);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error rejecting: ${e.toString()}'),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +182,7 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
           const Padding(
             padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 8),
             child: Text(
-              'All Requests',
+              'All Pending Requests',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
@@ -105,85 +202,8 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: bookedRooms.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No requests found',
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: bookedRooms.length,
-                        itemBuilder: (context, index) {
-                          final room = bookedRooms[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 4,
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                               child: Row(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.asset(
-        'assets/images/studyRoom1.png',
-        width: 90,
-        height: 80,
-        fit: BoxFit.cover,
-      ),
-    ),
-    const SizedBox(width: 10),
-    Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${room['name']} (${room['type']})',
-              style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline)),
-          const SizedBox(height: 4),
-          Text(room['time'] ?? '',
-              style: const TextStyle(
-                  fontSize: 14, color: Colors.black87)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            children: [
-              ElevatedButton(
-                onPressed: () => _showConfirmDialog(context, index, true),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                child: const Text('Approve'),
-              ),
-              ElevatedButton(
-                onPressed: () => _showConfirmDialog(context, index, false),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                child: const Text('Reject'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  ],
-),
-
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                // 9. Added dynamic content widget
+                child: _buildContent(),
               ),
             ),
           ),
@@ -192,89 +212,199 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
     );
   }
 
- void _showConfirmDialog(BuildContext context, int index, bool isApprove) {
-  final TextEditingController reasonController = TextEditingController();
+  // 10. Helper widget to show loading, error, or list
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AlertDialog(
-      backgroundColor: const Color(0xFFD1DCE4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(25),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Are you sure to ${isApprove ? 'approve' : 'reject'}?',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 20),
+    if (_error != null) {
+      return Center(
+          child: Text(_error!, style: const TextStyle(color: Colors.red)));
+    }
 
-          // ✅ Show text field if rejecting
-          if (!isApprove) ...[
-            TextField(
-              controller: reasonController,
-              decoration: InputDecoration(
-                hintText: 'Enter rejection reason...',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.black26),
-                ),
+    if (_pendingRequests.isEmpty) {
+      return const Center(
+        child: Text(
+          'No pending requests found for today',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: _pendingRequests.length,
+      itemBuilder: (context, index) {
+        final request = _pendingRequests[index];
+        final fullImageUrl = '$_baseUrl${request.imageUrl}';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: 4,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    // 11. Use Image.network
+                    child: Image.network(
+                      fullImageUrl,
+                      width: 90,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) => Container(
+                        width: 90,
+                        height: 80,
+                        color: Colors.grey.shade200,
+                        child:
+                            const Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 12. Use dynamic data
+                        Text('${request.roomName} (${request.roomType})',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline)),
+                        const SizedBox(height: 4),
+                        Text(request.time,
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black87)),
+                        const SizedBox(height: 4),
+                        // 13. Added requester name
+                        Text('By: ${request.requesterName}',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 10,
+                          children: [
+                            ElevatedButton(
+                              // 14. Call API function
+                              onPressed: () =>
+                                  _showConfirmDialog(context, request, true),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(10))),
+                              child: const Text('Approve'),
+                            ),
+                            ElevatedButton(
+                              // 15. Call API function
+                              onPressed: () =>
+                                  _showConfirmDialog(context, request, false),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(10))),
+                              child: const Text('Reject'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 2,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 16. Updated dialog to call the API
+  void _showConfirmDialog(
+      BuildContext context, PendingRequest request, bool isApprove) {
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFFD1DCE4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Are you sure to ${isApprove ? 'approve' : 'reject'}?',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 20),
-          ],
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.check_circle, color: Colors.green, size: 36),
-                onPressed: () {
-                  if (!isApprove && reasonController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a reason before rejecting.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context);
-                  setState(() {
-                    bookedRooms.removeAt(index);
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isApprove
-                            ? 'Request approved (moved to history)'
-                            : 'Request rejected (Reason: ${reasonController.text.trim()})',
-                      ),
-                      backgroundColor: isApprove ? Colors.green : Colors.red,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                },
+            if (!isApprove) ...[
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  hintText: 'Enter rejection reason...',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.black26),
+                  ),
+                ),
+                maxLines: 2,
               ),
-              const SizedBox(width: 20),
-              IconButton(
-                icon: const Icon(Icons.cancel, color: Colors.red, size: 36),
-                onPressed: () => Navigator.pop(context),
-              ),
+              const SizedBox(height: 20),
             ],
-          ),
-        ],
-      ),
-    ),
-  );
-}
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.check_circle,
+                      color: Colors.green, size: 36),
+                  onPressed: () {
+                    final reason = reasonController.text.trim();
+                    if (!isApprove && reason.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('Please enter a reason before rejecting.'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
 
+                    Navigator.pop(context); // Close dialog
+
+                    // 17. Call the correct API function
+                    if (isApprove) {
+                      _approveBooking(request.bookingId);
+                    } else {
+                      _rejectBooking(request.bookingId, reason);
+                    }
+                  },
+                ),
+                const SizedBox(width: 20),
+                IconButton(
+                  icon: const Icon(Icons.cancel, color: Colors.red, size: 36),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

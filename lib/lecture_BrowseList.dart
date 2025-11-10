@@ -1,34 +1,168 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/lecture_details.dart';
 
-class LectureBrowseList extends StatelessWidget {
+// 1. ADDED ROOM MODEL
+class Room {
+  final int id;
+  final String name;
+  final String type;
+  final String status;
+  final String imageUrl;
+
+  Room({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.status,
+    required this.imageUrl,
+  });
+
+  factory Room.fromJson(Map<String, dynamic> json) {
+    return Room(
+      id: json['room_id'] is int
+          ? json['room_id'] as int
+          : int.tryParse('${json['room_id']}') ?? 0,
+      name: json['room_name']?.toString() ?? 'Unknown',
+      type: json['room_type']?.toString() ?? '',
+      status: json['room_status']?.toString() ?? 'disable',
+      imageUrl: json['image_url']?.toString() ?? '',
+    );
+  }
+}
+
+// 2. CONVERTED TO STATEFULWIDGET
+class LectureBrowseList extends StatefulWidget {
   const LectureBrowseList({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, String>> rooms = [
-      {
-        "name": "Room 1",
-        "type": "Meeting room",
-        "image": "assets/images/studyRoom1.png",
-      },
-      {
-        "name": "Room 2",
-        "type": "Meeting room",
-        "image": "assets/images/studyRoom2.jpg",
-      },
-      {
-        "name": "Room 3",
-        "type": "Seminar room",
-        "image": "assets/images/seminarRoom.jpeg",
-      },
-      {
-        "name": "Room 4",
-        "type": "Multimedia room",
-        "image": "assets/images/multimediaRoom1.jpeg",
-      },
-    ];
+  State<LectureBrowseList> createState() => _LectureBrowseListState();
+}
 
+class _LectureBrowseListState extends State<LectureBrowseList> {
+  // 3. ADDED STATE VARIABLES
+  List<Room> rooms = []; // Master list
+  List<Room> filteredRooms = []; // Display list
+  final TextEditingController _searchController = TextEditingController();
+  bool _isLoading = true;
+  String? _error;
+
+  // 4. ADDED URL GETTER
+  String get _backendBase {
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000'; // For iOS Simulator
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRooms();
+    _searchController.addListener(() {
+      setState(() {}); // For the 'clear' button
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // 5. ADDED FETCH FUNCTION
+  Future<void> _fetchRooms() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final uri = Uri.parse('$_backendBase/api/rooms');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (resp.statusCode == 200) {
+        final List<dynamic> data = json.decode(resp.body) as List<dynamic>;
+        if (mounted) {
+          setState(() {
+            rooms = data
+                .map((e) => Room.fromJson(e as Map<String, dynamic>))
+                .toList();
+            filteredRooms = List.from(rooms);
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _error = resp.body.isNotEmpty
+                ? resp.body
+                : 'Server error: ${resp.statusCode}';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load rooms: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // 6. ADDED FILTER FUNCTION
+  void _filterRooms(String query) {
+    final String lowerQuery = query.toLowerCase();
+    setState(() {
+      if (lowerQuery.isEmpty) {
+        filteredRooms = List.from(rooms);
+      } else {
+        filteredRooms = rooms.where((room) {
+          final String roomNameLower = room.name.toLowerCase();
+          final String roomTypeLower = room.type.toLowerCase();
+          return roomNameLower.contains(lowerQuery) ||
+                 roomTypeLower.contains(lowerQuery);
+        }).toList();
+      }
+    });
+  }
+
+  // 7. ADDED IMAGE HELPER
+  Widget _roomImage(Room room) {
+    final img = room.imageUrl;
+    final src = img.startsWith('http') ? img : '$_backendBase$img';
+    return Image.network(
+      src,
+      width: 200,
+      height: 120,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 200,
+          height: 120,
+          color: Colors.grey[300],
+          child: const Icon(
+            Icons.image_not_supported,
+            color: Colors.grey,
+            size: 40,
+          ),
+        );
+      },
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          width: 200,
+          height: 120,
+          color: Colors.grey[300],
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -46,7 +180,7 @@ class LectureBrowseList extends StatelessWidget {
                     color: Colors.black,
                     shadows: [
                       Shadow(
-                        offset: Offset(2, 4),
+                        offset: const Offset(2, 4),
                         blurRadius: 6,
                         color: Colors.black.withOpacity(0.2),
                       ),
@@ -69,143 +203,40 @@ class LectureBrowseList extends StatelessWidget {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
+                        // 8. WIRED UP SEARCH BAR
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          child: const TextField(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: _filterRooms,
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.search),
-                              hintText: 'Search room name',
+                              prefixIcon: const Icon(Icons.search),
+                              hintText: 'Search by room name or type...',
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(vertical: 15),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 15,
+                                horizontal: 10,
+                              ),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _filterRooms('');
+                                      },
+                                    )
+                                  : null,
                             ),
                           ),
                         ),
                         const SizedBox(height: 20),
-                        Column(
-                          children: rooms.map((room) {
-                            return Container(
-                              width: 360,
-                              padding: const EdgeInsets.all(12),
-                              margin: const EdgeInsets.only(bottom: 18),
-                              decoration: BoxDecoration(
-                                color: Color(0xFFE5EBFC),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 6,
-                                    offset: Offset(2, 2),
-                                  ),
-                                ],
-                              ),
-                              // Make the main Column left-aligned so title/type are left
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Container(
-                                          width: 200,
-                                          height: 120,
-                                          color: Colors.white,
-                                          child: Image.asset(
-                                            room["image"]!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return Container(
-                                                color: Colors.grey[300],
-                                                child: const Icon(
-                                                  Icons.image_not_supported,
-                                                  color: Colors.grey,
-                                                  size: 40,
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      ElevatedButton.icon(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LectureDetails(
-          roomName: room["name"]!,
-          roomType: room["type"]!,
-          imagePath: room["image"]!,
-          status: "Available", // or "Disabled" if you want to test disabled mode
-        ),
-      ),
-    );
-  },
-  icon: const Icon(
-    Icons.info_outline,
-    size: 20,
-    color: Colors.white,
-  ),
-  label: const Text(
-    "Detail",
-    style: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      color: Colors.white,
-    ),
-  ),
-  style: ElevatedButton.styleFrom(
-    backgroundColor: const Color(0xFF222558),
-    padding: const EdgeInsets.symmetric(
-      horizontal: 14,
-      vertical: 12,
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-    ),
-    minimumSize: const Size(110, 44),
-  ),
-)
-
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // Force the title/type block to use the full card width and be left-aligned
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: Column(
-                                      
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          room["name"]!,
-                                          textAlign: TextAlign.left,
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          "(${room["type"]!})",
-                                          textAlign: TextAlign.left,
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                        
+                        // 9. ADDED DYNAMIC CONTENT BUILDER
+                        _buildRoomList(),
+                        
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -216,6 +247,157 @@ class LectureBrowseList extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // 10. WIDGET TO HANDLE LOADING/ERROR/EMPTY/DATA STATES
+  Widget _buildRoomList() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Text(
+            _error!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    if (filteredRooms.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: Text(
+            'No rooms found matching your search.',
+            style: TextStyle(color: Colors.black54, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: filteredRooms.map((room) {
+        final String fullImageUrl = room.imageUrl.startsWith('http')
+            ? room.imageUrl
+            : '$_backendBase${room.imageUrl}';
+        
+        // Convert API status 'enable'/'disable' to user-friendly string
+        final String displayStatus = room.status.toLowerCase() == 'enable'
+            ? 'Available'
+            : 'Disabled';
+
+        return Container(
+          width: 360,
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5EBFC),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 6,
+                offset: Offset(2, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    // 11. USE DYNAMIC IMAGE WIDGET
+                    child: _roomImage(room),
+                  ),
+                  ElevatedButton.icon(
+                    // ✅ NEW CODE
+onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => LectureDetails(
+        roomId: room.id, // <-- ADD THIS LINE
+        roomName: room.name,
+        roomType: room.type,
+        imagePath: fullImageUrl, 
+        status: displayStatus,
+      ),
+    ),
+  );
+},
+                    icon: const Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      "Detail",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF222558),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      minimumSize: const Size(110, 44),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 13. USE DYNAMIC TEXT
+                    Text(
+                      room.name,
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "(${room.type})",
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'lecture_BrowseList.dart';
@@ -5,8 +8,40 @@ import 'lecturer-CheckRequestPage.dart';
 import 'lecturer-history.dart';
 import 'main.dart'; // to access WelcomeScreen
 
+// ✅ 1. ADDED A MODEL FOR THE STATS
+class DashboardStats {
+  final int availableCount;
+  final int disabledCount;
+  final int pendingCount;
+  final int reservedCount;
+
+  DashboardStats({
+    this.availableCount = 0,
+    this.disabledCount = 0,
+    this.pendingCount = 0,
+    this.reservedCount = 0,
+  });
+
+  factory DashboardStats.fromJson(Map<String, dynamic> json) {
+    return DashboardStats(
+      availableCount: json['availableCount'] ?? 0,
+      disabledCount: json['disabledCount'] ?? 0,
+      pendingCount: json['pendingCount'] ?? 0,
+      reservedCount: json['reservedCount'] ?? 0,
+    );
+  }
+}
+
 class LectureDashboard extends StatefulWidget {
-  const LectureDashboard({super.key});
+  // ✅ 2. ACCEPT USERID AND USERNAME
+  final int userId;
+  final String? username;
+
+  const LectureDashboard({
+    super.key,
+    required this.userId,
+    this.username,
+  });
 
   @override
   State<LectureDashboard> createState() => _LectureDashboardState();
@@ -14,13 +49,23 @@ class LectureDashboard extends StatefulWidget {
 
 class _LectureDashboardState extends State<LectureDashboard> {
   int _selectedIndex = 0;
+  
+  // ✅ 3. MAKE _PAGES LIST DYNAMIC
+  late final List<Widget> _pages;
 
-  final List<Widget> _pages = const [
-    LecturerHomePage(),
-    LectureBrowseList(),
-    CheckRequestPage(),
-    HistoryPage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // ✅ 4. INITIALIZE _PAGES TO PASS DATA TO CHILDREN
+    _pages = [
+      LecturerHomePage(username: widget.username, userId: widget.userId),
+      const LectureBrowseList(),
+      // ✅✅✅ THIS IS THE FIX ✅✅✅
+      // Pass the lecturer's user ID to the other pages
+      CheckRequestPage(userId: widget.userId), 
+      HistoryPage(userId: widget.userId),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -49,8 +94,69 @@ class _LectureDashboardState extends State<LectureDashboard> {
   }
 }
 
-class LecturerHomePage extends StatelessWidget {
-  const LecturerHomePage({super.key});
+// ✅ 5. CONVERTED LECTURERHOMEPAGE TO A STATEFULWIDGET
+class LecturerHomePage extends StatefulWidget {
+  final String? username;
+  final int userId;
+  const LecturerHomePage({super.key, this.username, required this.userId});
+
+  @override
+  State<LecturerHomePage> createState() => _LecturerHomePageState();
+}
+
+class _LecturerHomePageState extends State<LecturerHomePage> {
+  // ✅ 6. ADDED STATE FOR LOADING STATS
+  DashboardStats? _stats;
+  bool _isLoading = true;
+  String? _error;
+
+  // ✅ 7. ADDED URL GETTER
+  String get _baseUrl {
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000'; // For iOS Simulator
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  // ✅ 8. ADDED FUNCTION TO FETCH STATS
+  Future<void> _fetchStats() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final uri = Uri.parse('$_baseUrl/api/dashboard/stats');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        if (mounted) {
+          setState(() {
+            _stats = DashboardStats.fromJson(data);
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _error = "Failed to load stats: ${resp.body}");
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = "Error connecting to server: ${e.toString()}");
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -65,7 +171,8 @@ class LecturerHomePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               side: const BorderSide(color: Color(0xFF3A7AFE), width: 3),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -83,7 +190,8 @@ class LecturerHomePage extends StatelessWidget {
                         Navigator.pop(context);
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const WelcomeScreen()),
                           (route) => false,
                         );
                       },
@@ -93,7 +201,8 @@ class LecturerHomePage extends StatelessWidget {
                           color: Colors.green,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, color: Colors.white, size: 28),
+                        child: const Icon(Icons.check,
+                            color: Colors.white, size: 28),
                       ),
                     ),
                     GestureDetector(
@@ -106,7 +215,8 @@ class LecturerHomePage extends StatelessWidget {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 28),
+                        child: const Icon(Icons.close,
+                            color: Colors.white, size: 28),
                       ),
                     ),
                   ],
@@ -127,17 +237,19 @@ class LecturerHomePage extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
+                        // ✅ 9. MADE USERNAME DYNAMIC
                         Text(
-                          "Hello, Lecturer",
-                          style: TextStyle(
+                          "Hello, ${widget.username ?? 'Lecturer'}",
+                          style: const TextStyle(
                             fontSize: 34,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
@@ -150,7 +262,7 @@ class LecturerHomePage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Text(
+                        const Text(
                           "Welcome to Room Reservation",
                           style: TextStyle(
                             fontSize: 25,
@@ -221,17 +333,52 @@ class LecturerHomePage extends StatelessWidget {
                             ),
                           ),
                           Spacer(),
-                          Icon(Icons.calendar_month, color: Colors.black, size: 30),
+                          Icon(Icons.calendar_month,
+                              color: Colors.black, size: 30),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      _buildStatCard("10", "Available Rooms"),
+                      // ✅ 10. UPDATED CARDS TO BE DYNAMIC
+                      _buildStatCard(
+                        _isLoading
+                            ? "..."
+                            : (_stats?.availableCount.toString() ?? "0"),
+                        "Available Rooms",
+                      ),
                       const SizedBox(height: 16),
-                      _buildStatCard("5", "Reserved Rooms"),
+                      _buildStatCard(
+                        _isLoading
+                            ? "..."
+                            : (_stats?.reservedCount.toString() ?? "0"),
+                        "Reserved Rooms",
+                      ),
                       const SizedBox(height: 16),
-                      _buildStatCard("3", "Pending Rooms"),
+                      _buildStatCard(
+                        _isLoading
+                            ? "..."
+                            : (_stats?.pendingCount.toString() ?? "0"),
+                        "Pending Rooms",
+                      ),
                       const SizedBox(height: 16),
-                      _buildStatCard("2", "Disabled Rooms"),
+                      _buildStatCard(
+                        _isLoading
+                            ? "..."
+                            : (_stats?.disabledCount.toString() ?? "0"),
+                        "Disabled Rooms",
+                      ),
+                      // ✅ 11. ADDED ERROR DISPLAY
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: Center(
+                            child: Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 16),
+                            ),
+                          ),
+                        )
                     ],
                   ),
                 ),
@@ -243,6 +390,7 @@ class LecturerHomePage extends StatelessWidget {
     );
   }
 
+  // This helper widget is unchanged
   Widget _buildStatCard(String number, String label) {
     return Container(
       width: double.infinity,

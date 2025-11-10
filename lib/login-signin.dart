@@ -69,7 +69,16 @@ class _LoginPageState extends State<LoginPage> {
           // Staff -> use named route in main.dart which shows staff navigation
           Navigator.pushReplacementNamed(context, '/staffMain');
         } else if (role == 'lecturer') {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LectureDashboard()));
+  // ✅ PASS THE USER'S ID AND USERNAME
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => LectureDashboard(
+        userId: userId ?? 0, // Pass the ID
+        username: username,     // Pass the name
+      ),
+    ),
+  );
         } else {
           // student or unknown -> student browse list
           
