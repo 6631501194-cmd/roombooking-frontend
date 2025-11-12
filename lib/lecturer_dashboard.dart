@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 import 'lecture_BrowseList.dart';
 import 'lecturer-CheckRequestPage.dart';
 import 'lecturer-history.dart';
 import 'main.dart'; // to access WelcomeScreen
 
-// ✅ 1. UPDATED THE MODEL (removed totalCount)
+// Model for the API stats (unchanged)
 class DashboardStats {
   final int availableCount;
   final int disabledCount;
@@ -54,6 +54,8 @@ class _LectureDashboardState extends State<LectureDashboard> {
   @override
   void initState() {
     super.initState();
+    // ✅✅✅ THIS IS THE FIX ✅✅✅
+    // The list now correctly passes the lecturer's userId to the child pages
     _pages = [
       LecturerHomePage(username: widget.username, userId: widget.userId),
       const LectureBrowseList(),
@@ -89,7 +91,6 @@ class _LectureDashboardState extends State<LectureDashboard> {
   }
 }
 
-// This is the main "Home" tab of the lecturer dashboard
 class LecturerHomePage extends StatefulWidget {
   final String? username;
   final int userId;
@@ -103,6 +104,8 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
   DashboardStats? _stats;
   bool _isLoading = true;
   String? _error;
+  // 2. CREATE STORAGE
+  final _storage = const FlutterSecureStorage();
 
   String get _baseUrl {
     if (Platform.isAndroid) return 'http://10.0.2.2:3000';
@@ -115,7 +118,6 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
     _fetchStats();
   }
 
-  // This function is unchanged, it still calls the same route
   Future<void> _fetchStats() async {
     if (!mounted) return;
     setState(() {
@@ -124,8 +126,21 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
     });
 
     try {
+      // 3. ✅ GET THE TOKEN
+      final token = await _storage.read(key: 'jwt_token');
+      if (token == null) {
+        throw Exception('Token not found. Please log in again.');
+      }
+
       final uri = Uri.parse('$_baseUrl/api/dashboard/stats');
-      final resp = await http.get(uri).timeout(const Duration(seconds: 8));
+      // 4. ✅ ADD TOKEN TO HEADER
+      final resp = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token'
+        },
+      ).timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
@@ -142,7 +157,7 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _error = "Error connecting to server: ${e.toString()}");
+        setState(() => _error = "Error: ${e.toString()}");
       }
     } finally {
       if (mounted) {
@@ -179,14 +194,19 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const WelcomeScreen()),
-                          (route) => false,
-                        );
+                      onTap: () async { // 5. ✅ MAKE ASYNC
+                        // 6. ✅ DELETE THE TOKEN
+                        await _storage.delete(key: 'jwt_token');
+                        
+                        if (mounted) {
+                           Navigator.pop(context);
+                           Navigator.pushAndRemoveUntil(
+                             context,
+                             MaterialPageRoute(
+                                 builder: (_) => const WelcomeScreen()),
+                             (route) => false,
+                           );
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(10),
@@ -331,9 +351,6 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        
-                        // ✅✅✅ THIS IS THE FIX ✅✅✅
-                        // "Total" card is removed and labels are updated.
                         
                         _buildStatCard(
                           _isLoading

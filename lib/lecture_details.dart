@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
 class TimeSlot {
   final int slotId;
@@ -51,6 +52,9 @@ class _LectureDetailsState extends State<LectureDetails> {
   bool _isLoading = true;
   String? _errorMsg;
   List<TimeSlot> _slots = [];
+  // 2. CREATE STORAGE
+  final _storage = const FlutterSecureStorage();
+  String? _token; // To store the token for image requests
 
   String get _baseUrl {
     if (Platform.isAndroid) {
@@ -62,8 +66,18 @@ class _LectureDetailsState extends State<LectureDetails> {
   @override
   void initState() {
     super.initState();
+    // 3. LOAD TOKEN, THEN FETCH SLOTS
+    _loadTokenAndFetch();
+  }
+  
+  Future<void> _loadTokenAndFetch() async {
+    final token = await _storage.read(key: 'jwt_token');
+    setState(() {
+      _token = token;
+    });
+
     if (widget.status == "Available") {
-      _fetchTimeSlots();
+      _fetchTimeSlots(token);
     } else {
       setState(() {
         _isLoading = false;
@@ -71,15 +85,29 @@ class _LectureDetailsState extends State<LectureDetails> {
     }
   }
 
-  Future<void> _fetchTimeSlots() async {
+  // 4. ✅ MODIFIED TO SEND TOKEN
+  Future<void> _fetchTimeSlots(String? token) async {
     setState(() {
       _isLoading = true;
       _errorMsg = null;
     });
 
+    if (token == null) {
+      setState(() {
+        _errorMsg = "Error: Not logged in.";
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots'));
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token' // Send token
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -103,7 +131,7 @@ class _LectureDetailsState extends State<LectureDetails> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMsg = 'Error connecting to server: $e';
+          _errorMsg = 'Error: $e';
           _isLoading = false;
         });
       }
@@ -131,11 +159,20 @@ class _LectureDetailsState extends State<LectureDetails> {
   Widget build(BuildContext context) {
     final bool isAvailable = widget.status == "Available";
     
-    Widget displayedImage = Image.network(
+    // 5. ✅ ADDED HEADERS TO IMAGE WIDGET
+    Widget displayedImage = (_token == null)
+      ? Container( // Placeholder while token is loading
+          width: double.infinity,
+          height: 200,
+          color: Colors.grey.shade300,
+          child: const Center(child: CircularProgressIndicator()),
+        )
+      : Image.network(
       widget.imagePath,
       width: double.infinity,
       height: 200,
       fit: BoxFit.cover,
+      headers: {'Authorization': 'Bearer $_token'}, // <-- SEND TOKEN
       errorBuilder: (context, error, stack) => Container(
         width: double.infinity,
         height: 200,
@@ -153,6 +190,7 @@ class _LectureDetailsState extends State<LectureDetails> {
     );
 
     final roomDetailContent = Expanded(
+      // ... (Rest of this widget is unchanged) ...
       child: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -202,7 +240,7 @@ class _LectureDetailsState extends State<LectureDetails> {
                 
                 isAvailable
                   ? _buildSlotList()
-                  : _buildDisabledList(), // Show disabled list if room is disabled
+                  : _buildDisabledList(),
 
                 const SizedBox(height: 20),
               ],
@@ -213,6 +251,7 @@ class _LectureDetailsState extends State<LectureDetails> {
     );
 
     final header = Padding(
+      // ... (This widget is unchanged) ...
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,6 +346,7 @@ class _LectureDetailsState extends State<LectureDetails> {
   }
 
   Widget _buildSlotList() {
+    // ... (This function is unchanged)
     if (_isLoading) {
       return const Center(
         child: Padding(
@@ -352,15 +392,13 @@ class _LectureDetailsState extends State<LectureDetails> {
       separatorBuilder: (context, index) => const SizedBox(height: 10),
     );
   }
-
-  // ✅✅✅ THIS WIDGET IS FIXED ✅✅✅
+  
   Widget buildTimeSlotReadOnly(TimeSlot slot) {
+    // ... (This function is unchanged)
     final statusColor = _getColorForStatus(slot.status);
     final String statusText =
         slot.status[0].toUpperCase() + slot.status.substring(1);
 
-    // 1. Wrap the Container in a Row with MainAxisAlignment.center
-    //    This makes the white box shrink to fit its content.
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -374,9 +412,7 @@ class _LectureDetailsState extends State<LectureDetails> {
             ],
           ),
           child: Row(
-            // 2. This inner Row just groups the Time and Status
             children: [
-              // Time
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
@@ -392,11 +428,7 @@ class _LectureDetailsState extends State<LectureDetails> {
                   ),
                 ),
               ),
-              
-              // 3. This SizedBox adds the separation
               const SizedBox(width: 20), 
-
-              // Status
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
                 decoration: BoxDecoration(
@@ -418,11 +450,9 @@ class _LectureDetailsState extends State<LectureDetails> {
       ],
     );
   }
-  // ✅✅✅ END OF FIX ✅✅✅
 
-
-  // A helper to show a static 'Disabled' list
   Widget _buildDisabledList() {
+    // ... (This function is unchanged)
     const Color redColor = Color(0xFFE53935);
     final List<Map<String, dynamic>> timeSlots = [
       {'time': '8:00 - 10:00', 'status': 'Disabled', 'color': redColor},
@@ -433,7 +463,6 @@ class _LectureDetailsState extends State<LectureDetails> {
 
     return Column(
       children: timeSlots.map((slot) {
-        // ✅ APPLIED THE SAME CENTERED LAYOUT FIX HERE
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

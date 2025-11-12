@@ -1,12 +1,16 @@
 import 'dart:convert';
-// We don't need 'dart:io' since we are just using localhost
+import 'dart:io'; // Import Platform
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/login-signup.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
 // Use lowercase to match your file system if that's the case
 import 'student_BrowseList.dart'; 
 import 'lecturer_dashboard.dart';
+// Note: You are also missing 'staff_dashboard.dart' import
+import 'staff_dashboard.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,8 +20,15 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // ✅ CORRECT for iOS Simulator
-  static const String backendBase = 'http://localhost:3000';
+  // 2. CREATE STORAGE
+  final _storage = const FlutterSecureStorage();
+
+  String get _backendBase {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3000';
+    }
+    return 'http://localhost:3000';
+  }
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -32,6 +43,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showMessage(String message, {Color background = Colors.red}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: background, duration: const Duration(seconds: 2)),
@@ -49,47 +61,50 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      final uri = Uri.parse('$backendBase/api/login');
+      final uri = Uri.parse('$_backendBase/api/login');
       final resp = await http
           .post(uri,
               headers: {'Content-Type': 'application/json'},
               body: json.encode({'email': email, 'password': password}))
           .timeout(const Duration(seconds: 10));
+      
+      if (!mounted) return;
 
       if (resp.statusCode == 200) {
-        // ✅ FIXED: Decode and read all user data
         final Map<String, dynamic> data = json.decode(resp.body);
+
+        // 3. ✅ SAVE THE TOKEN
+        if (data['token'] != null) {
+          await _storage.write(key: 'jwt_token', value: data['token']);
+        } else {
+          _showMessage('Login failed: No token received from server.');
+          setState(() => _isLoading = false);
+          return;
+        }
 
         final role = data['role']?.toString();
         final int? userId = data['uid'] as int?;
         final String? username = data['username']?.toString();
 
-
+        if (userId == null) {
+          _showMessage('Login error: User ID was missing from response.');
+          setState(() => _isLoading = false);
+          return;
+        }
+        
         if (role == 'staff') {
-          // Staff -> use named route in main.dart which shows staff navigation
           Navigator.pushReplacementNamed(context, '/staffMain');
         } else if (role == 'lecturer') {
-  // ✅ PASS THE USER'S ID AND USERNAME
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => LectureDashboard(
-        userId: userId ?? 0, // Pass the ID
-        username: username,     // Pass the name
-      ),
-    ),
-  );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => LectureDashboard(
+                userId: userId,
+                username: username ?? 'Lecturer',
+              ),
+            ),
+          );
         } else {
-          // student or unknown -> student browse list
-          
-          // Safety check
-          if (userId == null) {
-            _showMessage('Login error: User ID was missing from response.');
-            setState(() => _isLoading = false); // Stop loading
-            return;
-          }
-
-          // ✅ FIXED: Pass the user's ID and username to the next screen
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -107,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
         _showMessage(msg);
       }
     } catch (e) {
-      _showMessage('Login failed: $e');
+      if (mounted) _showMessage('Login failed: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -115,6 +130,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ... Your build method is unchanged ...
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: Colors.white,

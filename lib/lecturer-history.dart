@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
-// 1. Model for the history data from the API
 class BookingHistory {
   final int bookingId;
   final String status;
@@ -28,41 +28,22 @@ class BookingHistory {
   });
 
   factory BookingHistory.fromJson(Map<String, dynamic> json) {
-    // Defensive parsing: some API fields may be null or use slightly
-    // different names depending on the backend SQL aliases. Normalize
-    // and provide safe defaults to avoid runtime type errors.
-    final bookingId = json['bookingId'] is int
-        ? json['bookingId'] as int
-        : int.tryParse('${json['bookingId']}') ?? 0;
-
-    final status = (json['status'] ?? json['booking_status'])?.toString() ?? '';
-    final rejectReason = json['rejectReason']?.toString();
-    final date = (json['date'] ?? json['bookingDate'])?.toString() ?? '';
-    final roomName = (json['roomName'] ?? json['room_name'])?.toString() ?? '';
-    final roomType = (json['roomType'] ?? json['room_type'])?.toString() ?? '';
-    final time = (json['time'] ?? ((json['startTime'] ?? '') is String ? '${json['startTime']}-${json['endTime']}' : ''))?.toString() ?? '';
-    final approverName = (json['approverName'] ?? json['approver_name'])?.toString() ?? 'N/A';
-    final requesterName = (json['requesterName'] ?? json['requester_name'] ?? json['username'])?.toString() ?? 'Unknown';
-
     return BookingHistory(
-      bookingId: bookingId,
-      status: status,
-      rejectReason: rejectReason,
-      date: date,
-      roomName: roomName,
-      roomType: roomType,
-      time: time,
-      approverName: approverName,
-      requesterName: requesterName,
+      bookingId: json['bookingId'],
+      status: json['status'],
+      rejectReason: json['rejectReason'],
+      date: json['date'],
+      roomName: json['roomName'],
+      roomType: json['roomType'],
+      time: json['time'],
+      approverName: json['approverName'],
+      requesterName: json['requesterName'],
     );
   }
 }
 
-// 2. Converted to StatefulWidget
 class HistoryPage extends StatefulWidget {
-  // 3. This is the logged-in lecturer's ID
   final int userId;
-
   const HistoryPage({super.key, required this.userId});
 
   @override
@@ -70,18 +51,17 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  // 4. State variables for loading, data, and errors
   bool _isLoading = true;
   List<BookingHistory> _historyItems = [];
   String? _errorMsg;
+  // 2. CREATE STORAGE
+  final _storage = const FlutterSecureStorage();
 
-  // Colors
   static const borderGrey = Color.fromARGB(255, 168, 183, 194);
   static const textDark = Color(0xFF0F1621);
   static const approvedGreen = Color(0xFF18A05B);
   static const rejectedRed = Color(0xFFD9534F);
 
-  // 5. Dynamic base URL
   String get _baseUrl {
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000';
@@ -92,13 +72,11 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    // 6. Fetch data on page load
     _fetchHistory();
   }
 
-  // 7. Updated function to call the NEW lecturer history API
+  // 3. ✅ MODIFIED TO SEND TOKEN
   Future<void> _fetchHistory() async {
-    // Safety check
     if (widget.userId == 0) {
       setState(() {
          _isLoading = false;
@@ -106,16 +84,22 @@ class _HistoryPageState extends State<HistoryPage> {
       });
       return;
     }
-
     setState(() {
       _isLoading = true;
       _errorMsg = null;
     });
 
     try {
-      // ✅ This is the correct API route for a lecturer's history
-      final uri = Uri.parse('$_baseUrl/api/lecturer/${widget.userId}/history');
-      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      final token = await _storage.read(key: 'jwt_token');
+      // This is the correct API route for a lecturer's own history
+      final uri = Uri.parse('$_baseUrl/api/lecturer/history');
+      final response = await http.get(
+        uri,
+         headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token' // Send token
+        },
+      ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -135,7 +119,7 @@ class _HistoryPageState extends State<HistoryPage> {
     } catch (e) {
        if (mounted) {
         setState(() {
-          _errorMsg = 'Error connecting to server: ${e.toString()}';
+          _errorMsg = 'Error: ${e.toString()}';
         });
        }
     } finally {
@@ -147,7 +131,6 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
-  // 8. Helper to build the main content
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(
@@ -184,7 +167,6 @@ class _HistoryPageState extends State<HistoryPage> {
       );
     }
 
-    // 9. Use the dynamic list from the state
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: _historyItems.length,
@@ -197,11 +179,10 @@ class _HistoryPageState extends State<HistoryPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 8),
               child: Text(
-                item.date, // Use data from API
+                item.date, 
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontStyle: FontStyle.italic,
@@ -210,8 +191,6 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
             ),
-
-            // Card
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF4FF),
@@ -229,16 +208,14 @@ class _HistoryPageState extends State<HistoryPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    
-                    // ✅✅✅ --- CORRECTED LAYOUT --- ✅✅✅
-                    // Left Column (Room Info + Requester)
+                    // ✅ Left Column (Room Info + Requester)
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            item.roomName, // Room Name
+                            item.roomName,
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 18,
@@ -247,7 +224,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '(${item.roomType})', // Room Type
+                            '(${item.roomType})', 
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 14,
@@ -256,7 +233,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            item.time, // Time
+                            item.time, 
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 16,
@@ -264,7 +241,6 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          // Show "Requested by"
                           Text(
                             'Requested by',
                             style: const TextStyle(
@@ -302,11 +278,11 @@ class _HistoryPageState extends State<HistoryPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: statusColor, // Dynamic color
+                              color: statusColor, 
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              statusText, // Dynamic text
+                              statusText, 
                               style: const TextStyle(
                                 color: Colors.black, 
                                 fontSize: 13,
@@ -315,7 +291,6 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          // Show "Processed by"
                           Text(
                             isApproved ? 'Approved by' : 'Rejected by',
                             style: const TextStyle(
@@ -334,7 +309,6 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                           ),
                           
-                          // Conditionally show reject reason
                           if (!isApproved &&
                               item.rejectReason != null &&
                               item.rejectReason!.isNotEmpty) ...[
@@ -369,7 +343,6 @@ class _HistoryPageState extends State<HistoryPage> {
                         ],
                       ),
                     ),
-                    // ✅✅✅ --- END OF LAYOUT FIX --- ✅✅✅
                   ],
                 ),
               ),
@@ -420,7 +393,6 @@ class _HistoryPageState extends State<HistoryPage> {
                     topRight: Radius.circular(50),
                   ),
                 ),
-                // 11. Call the dynamic content builder
                 child: _buildContent(),
               ),
             ),
