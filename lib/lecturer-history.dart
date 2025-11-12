@@ -13,7 +13,7 @@ class BookingHistory {
   final String roomType;
   final String time;
   final String approverName;
-  final String requesterName; // ✅ ADDED REQUESTER
+  final String requesterName;
 
   BookingHistory({
     required this.bookingId,
@@ -24,28 +24,43 @@ class BookingHistory {
     required this.roomType,
     required this.time,
     required this.approverName,
-    required this.requesterName, // ✅ ADDED REQUESTER
+    required this.requesterName,
   });
 
   factory BookingHistory.fromJson(Map<String, dynamic> json) {
+    // Defensive parsing: some API fields may be null or use slightly
+    // different names depending on the backend SQL aliases. Normalize
+    // and provide safe defaults to avoid runtime type errors.
+    final bookingId = json['bookingId'] is int
+        ? json['bookingId'] as int
+        : int.tryParse('${json['bookingId']}') ?? 0;
+
+    final status = (json['status'] ?? json['booking_status'])?.toString() ?? '';
+    final rejectReason = json['rejectReason']?.toString();
+    final date = (json['date'] ?? json['bookingDate'])?.toString() ?? '';
+    final roomName = (json['roomName'] ?? json['room_name'])?.toString() ?? '';
+    final roomType = (json['roomType'] ?? json['room_type'])?.toString() ?? '';
+    final time = (json['time'] ?? ((json['startTime'] ?? '') is String ? '${json['startTime']}-${json['endTime']}' : ''))?.toString() ?? '';
+    final approverName = (json['approverName'] ?? json['approver_name'])?.toString() ?? 'N/A';
+    final requesterName = (json['requesterName'] ?? json['requester_name'] ?? json['username'])?.toString() ?? 'Unknown';
+
     return BookingHistory(
-      bookingId: json['bookingId'],
-      status: json['status'],
-      rejectReason: json['rejectReason'],
-      date: json['date'],
-      roomName: json['roomName'],
-      roomType: json['roomType'],
-      time: json['time'],
-      approverName: json['approverName'],
-      requesterName: json['requesterName'], // ✅ ADDED REQUESTER
+      bookingId: bookingId,
+      status: status,
+      rejectReason: rejectReason,
+      date: date,
+      roomName: roomName,
+      roomType: roomType,
+      time: time,
+      approverName: approverName,
+      requesterName: requesterName,
     );
   }
 }
 
 // 2. Converted to StatefulWidget
 class HistoryPage extends StatefulWidget {
-  // 3. Added userId (the lecturer's ID)
-  // We keep this in case you want to show "Approved by You"
+  // 3. This is the logged-in lecturer's ID
   final int userId;
 
   const HistoryPage({super.key, required this.userId});
@@ -81,16 +96,26 @@ class _HistoryPageState extends State<HistoryPage> {
     _fetchHistory();
   }
 
-  // 7. New function to call the new /api/bookings/history API
+  // 7. Updated function to call the NEW lecturer history API
   Future<void> _fetchHistory() async {
+    // Safety check
+    if (widget.userId == 0) {
+      setState(() {
+         _isLoading = false;
+        _errorMsg = "Error: No user ID was provided.";
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMsg = null;
     });
 
     try {
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/bookings/history')); // ✅ NEW API ROUTE
+      // ✅ This is the correct API route for a lecturer's history
+      final uri = Uri.parse('$_baseUrl/api/lecturer/${widget.userId}/history');
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -110,7 +135,7 @@ class _HistoryPageState extends State<HistoryPage> {
     } catch (e) {
        if (mounted) {
         setState(() {
-          _errorMsg = 'Error connecting to server: $e';
+          _errorMsg = 'Error connecting to server: ${e.toString()}';
         });
        }
     } finally {
@@ -151,7 +176,8 @@ class _HistoryPageState extends State<HistoryPage> {
         child: Padding(
           padding: EdgeInsets.all(32.0),
           child: Text(
-            'No booking history found.',
+            'You have not processed any bookings yet.',
+            textAlign: TextAlign.center,
             style: TextStyle(color: Colors.black54, fontSize: 16),
           ),
         ),
@@ -204,7 +230,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     
-                    // ✅✅✅ --- LAYOUT FIX START --- ✅✅✅
+                    // ✅✅✅ --- CORRECTED LAYOUT --- ✅✅✅
                     // Left Column (Room Info + Requester)
                     Expanded(
                       child: Column(
@@ -240,10 +266,10 @@ class _HistoryPageState extends State<HistoryPage> {
                           const SizedBox(height: 8),
                           // Show "Requested by"
                           Text(
-                            '--------------------\n     Requested by',
+                            'Requested by',
                             style: const TextStyle(
                               color: Colors.black,
-                              fontSize: 17,
+                              fontSize: 15,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -251,8 +277,8 @@ class _HistoryPageState extends State<HistoryPage> {
                             item.requesterName, // Requester Name
                             style: const TextStyle(
                               color: textDark,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -298,8 +324,9 @@ class _HistoryPageState extends State<HistoryPage> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          
                           Text(
-                            item.approverName, // Approver Name
+                            "You", // The API only returns items processed by this user
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 16,
@@ -342,7 +369,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         ],
                       ),
                     ),
-                    // ✅✅✅ --- LAYOUT FIX END --- ✅✅✅
+                    // ✅✅✅ --- END OF LAYOUT FIX --- ✅✅✅
                   ],
                 ),
               ),

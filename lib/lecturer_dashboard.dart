@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -8,7 +9,7 @@ import 'lecturer-CheckRequestPage.dart';
 import 'lecturer-history.dart';
 import 'main.dart'; // to access WelcomeScreen
 
-// ✅ 1. ADDED A MODEL FOR THE STATS
+// ✅ 1. UPDATED THE MODEL (removed totalCount)
 class DashboardStats {
   final int availableCount;
   final int disabledCount;
@@ -33,7 +34,6 @@ class DashboardStats {
 }
 
 class LectureDashboard extends StatefulWidget {
-  // ✅ 2. ACCEPT USERID AND USERNAME
   final int userId;
   final String? username;
 
@@ -49,19 +49,14 @@ class LectureDashboard extends StatefulWidget {
 
 class _LectureDashboardState extends State<LectureDashboard> {
   int _selectedIndex = 0;
-  
-  // ✅ 3. MAKE _PAGES LIST DYNAMIC
   late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    // ✅ 4. INITIALIZE _PAGES TO PASS DATA TO CHILDREN
     _pages = [
       LecturerHomePage(username: widget.username, userId: widget.userId),
       const LectureBrowseList(),
-      // ✅✅✅ THIS IS THE FIX ✅✅✅
-      // Pass the lecturer's user ID to the other pages
       CheckRequestPage(userId: widget.userId), 
       HistoryPage(userId: widget.userId),
     ];
@@ -94,7 +89,7 @@ class _LectureDashboardState extends State<LectureDashboard> {
   }
 }
 
-// ✅ 5. CONVERTED LECTURERHOMEPAGE TO A STATEFULWIDGET
+// This is the main "Home" tab of the lecturer dashboard
 class LecturerHomePage extends StatefulWidget {
   final String? username;
   final int userId;
@@ -105,12 +100,10 @@ class LecturerHomePage extends StatefulWidget {
 }
 
 class _LecturerHomePageState extends State<LecturerHomePage> {
-  // ✅ 6. ADDED STATE FOR LOADING STATS
   DashboardStats? _stats;
   bool _isLoading = true;
   String? _error;
 
-  // ✅ 7. ADDED URL GETTER
   String get _baseUrl {
     if (Platform.isAndroid) return 'http://10.0.2.2:3000';
     return 'http://localhost:3000'; // For iOS Simulator
@@ -122,7 +115,7 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
     _fetchStats();
   }
 
-  // ✅ 8. ADDED FUNCTION TO FETCH STATS
+  // This function is unchanged, it still calls the same route
   Future<void> _fetchStats() async {
     if (!mounted) return;
     setState(() {
@@ -246,7 +239,6 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ✅ 9. MADE USERNAME DYNAMIC
                         Text(
                           "Hello, ${widget.username ?? 'Lecturer'}",
                           style: const TextStyle(
@@ -312,74 +304,80 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Text(
-                            "Dashboard",
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(2, 4),
-                                  blurRadius: 6,
-                                  color: Color.fromARGB(40, 0, 0, 0),
-                                ),
-                              ],
+                  child: SingleChildScrollView( 
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Text(
+                              "Dashboard",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(2, 4),
+                                    blurRadius: 6,
+                                    color: Color.fromARGB(40, 0, 0, 0),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          Spacer(),
-                          Icon(Icons.calendar_month,
-                              color: Colors.black, size: 30),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // ✅ 10. UPDATED CARDS TO BE DYNAMIC
-                      _buildStatCard(
-                        _isLoading
-                            ? "..."
-                            : (_stats?.availableCount.toString() ?? "0"),
-                        "Available Rooms",
-                      ),
-                      const SizedBox(height: 16),
-                      _buildStatCard(
-                        _isLoading
-                            ? "..."
-                            : (_stats?.reservedCount.toString() ?? "0"),
-                        "Reserved Rooms",
-                      ),
-                      const SizedBox(height: 16),
-                      _buildStatCard(
-                        _isLoading
-                            ? "..."
-                            : (_stats?.pendingCount.toString() ?? "0"),
-                        "Pending Rooms",
-                      ),
-                      const SizedBox(height: 16),
-                      _buildStatCard(
-                        _isLoading
-                            ? "..."
-                            : (_stats?.disabledCount.toString() ?? "0"),
-                        "Disabled Rooms",
-                      ),
-                      // ✅ 11. ADDED ERROR DISPLAY
-                      if (_error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Center(
-                            child: Text(
-                              _error!,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  color: Colors.red, fontSize: 16),
+                            Spacer(),
+                            Icon(Icons.calendar_month,
+                                color: Colors.black, size: 30),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // ✅✅✅ THIS IS THE FIX ✅✅✅
+                        // "Total" card is removed and labels are updated.
+                        
+                        _buildStatCard(
+                          _isLoading
+                              ? "..."
+                              : (_stats?.availableCount.toString() ?? "0"),
+                          "Available Slots (Today)",
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatCard(
+                          _isLoading
+                              ? "..."
+                              : (_stats?.reservedCount.toString() ?? "0"),
+                          "Reserved Slots (Today)",
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatCard(
+                          _isLoading
+                              ? "..."
+                              : (_stats?.pendingCount.toString() ?? "0"),
+                          "Pending Slots (Today)",
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatCard(
+                          _isLoading
+                              ? "..."
+                              : (_stats?.disabledCount.toString() ?? "0"),
+                          "Disabled Slots (Total)",
+                        ),
+                        const SizedBox(height: 16), 
+
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: Center(
+                              child: Text(
+                                _error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    color: Colors.red, fontSize: 16),
+                              ),
                             ),
-                          ),
-                        )
-                    ],
+                          )
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -390,7 +388,6 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
     );
   }
 
-  // This helper widget is unchanged
   Widget _buildStatCard(String number, String label) {
     return Container(
       width: double.infinity,

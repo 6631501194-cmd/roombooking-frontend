@@ -194,7 +194,7 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
             child: Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                color: Color(0xFFD3E6FF),
+                 color: Color(0xFFB9D6FF),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
                   topRight: Radius.circular(50),
