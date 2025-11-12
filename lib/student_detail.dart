@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:io'; // 1. IMPORT 'dart:io'
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
-// A simple class to model the API response for a time slot
 class TimeSlot {
   final int slotId;
   final String time;
@@ -29,10 +29,10 @@ class TimeSlot {
 
 class RoomDetailScreen extends StatefulWidget {
   final int roomId;
-  final int userId; // Assuming userId is passed after login
+  final int userId; 
   final String roomName;
   final String roomType;
-  final String imageUrl; // Changed from imagePath to imageUrl
+  final String imageUrl; 
 
   const RoomDetailScreen({
     super.key,
@@ -48,70 +48,113 @@ class RoomDetailScreen extends StatefulWidget {
 }
 
 class _RoomDetailScreenState extends State<RoomDetailScreen> {
+  // 2. ✅ ADDED STORAGE AND TOKEN
+  final _storage = const FlutterSecureStorage();
+  String? _token;
+  
   bool _isLoading = true;
   String? _errorMsg;
   List<TimeSlot> _slots = [];
 
-  // 2. REPLACED hardcoded string with a dynamic getter
   String get _baseUrl {
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000';
     }
-    // iOS Simulator and web/desktop use localhost
     return 'http://localhost:3000';
   }
 
   @override
   void initState() {
     super.initState();
-    _fetchTimeSlots();
+    // 3. ✅ MODIFIED: Load token first, then fetch
+    _loadTokenAndFetch();
   }
 
-  Future<void> _fetchTimeSlots() async {
+  // 4. ✅ ADDED: New function to load token
+  Future<void> _loadTokenAndFetch() async {
+    final token = await _storage.read(key: 'jwt_token');
+    if (mounted) {
+      setState(() { _token = token; });
+    }
+    _fetchTimeSlots(token);
+  }
+
+  // 5. ✅ MODIFIED: Function now accepts and sends token
+  Future<void> _fetchTimeSlots(String? token) async {
+    if (token == null) {
+      if (mounted) {
+        setState(() {
+          _errorMsg = "Error: Not logged in.";
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
       _errorMsg = null;
     });
 
     try {
-      // It will now use the correct URL for iOS
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots'));
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots'),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token' 
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         final List<TimeSlot> parsedSlots =
             data.map((json) => TimeSlot.fromJson(json)).toList();
         
-        setState(() {
-          _slots = parsedSlots;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _slots = parsedSlots;
+            _isLoading = false;
+          });
+        }
       } else {
+        if(mounted) {
+          setState(() {
+            _errorMsg = 'Failed to load slots: ${response.body}';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMsg = 'Failed to load slots: ${response.body}';
+          _errorMsg = 'Error connecting to server: $e';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMsg = 'Error connecting to server: $e';
-        _isLoading = false;
-      });
     }
   }
 
+  // 6. ✅ MODIFIED: Booking now sends token, removed userId from body
   Future<void> _bookSlot(int slotId) async {
     try {
+      final token = await _storage.read(key: 'jwt_token');
+      if (token == null) {
+        throw Exception('Token not found. Please log in again.');
+      }
+      
       final response = await http.post(
-        // It will also use the correct URL for iOS here
         Uri.parse('$_baseUrl/api/rooms/${widget.roomId}/slots/$slotId/book'),
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: json.encode({'userId': widget.userId}),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token' // <-- Add header
+        },
+        // ⚠️ REMOVED: The API now gets the userId from the token
+        // body: json.encode({'userId': widget.userId}),
       );
 
+      if (!mounted) return;
+
       if (response.statusCode == 201) {
-        // Success
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Booking created! Please wait for approval.'),
@@ -119,9 +162,8 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             duration: Duration(seconds: 2),
           ),
         );
-        _fetchTimeSlots(); // Refresh the list after booking
+        _fetchTimeSlots(_token); // Refresh the list
       } else {
-        // Handle API errors (409, 400, etc.)
         final Map<String, dynamic> errorData = json.decode(response.body);
         final String message = errorData['message'] ?? 'Failed to book slot.';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,21 +173,23 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             duration: Duration(seconds: 3),
           ),
         );
-        _fetchTimeSlots(); // Refresh list even on error (e.g., "slot taken")
+        _fetchTimeSlots(_token); // Refresh list even on error
       }
     } catch (e) {
-      // Handle network errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
+       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+       }
     }
   }
 
   Color _getColorForStatus(String status) {
+    // ... (This function is unchanged)
     switch (status.toLowerCase()) {
       case 'available':
         return const Color(0xFF00C896);
@@ -224,8 +268,16 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
+                        // 7. ✅ MODIFIED: Image widget now sends token
+                        child: (_token == null) 
+                          ? Container( 
+                              height: 200,
+                              color: Colors.grey.shade300,
+                              child: const Center(child: CircularProgressIndicator()),
+                            )
+                          : Image.network(
                           widget.imageUrl,
+                          headers: {'Authorization': 'Bearer $_token'}, // <-- Add header
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -281,8 +333,6 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 15),
-
-                      // Dynamic Time Slot List
                       _buildSlotList(),
                     ],
                   ),
@@ -296,6 +346,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
   }
 
   Widget _buildSlotList() {
+    // ... (This function is unchanged) ...
     if (_isLoading) {
       return const Center(
         child: Padding(
@@ -331,18 +382,19 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     }
 
     return ListView.separated(
-      shrinkWrap: true,
+      shrinkWrap: true, 
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _slots.length,
       itemBuilder: (context, index) {
         final slot = _slots[index];
-        return buildTimeSlot(slot);
+        return buildTimeSlot(slot); 
       },
       separatorBuilder: (context, index) => const SizedBox(height: 10),
     );
   }
 
   Widget buildTimeSlot(TimeSlot slot) {
+    // ... (This function is unchanged) ...
     final statusColor = _getColorForStatus(slot.status);
     final String statusText =
         slot.status[0].toUpperCase() + slot.status.substring(1);
@@ -395,7 +447,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                 showBookingDialog(
                   'Are you sure to book this room?',
                   true,
-                  () => _bookSlot(slot.slotId),
+                  () => _bookSlot(slot.slotId), 
                 );
               } else {
                 String message = "This room is not available.\nPlease try another slot.";
@@ -438,6 +490,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
   }
 
   void showBookingDialog(String title, bool confirm, VoidCallback? onBooked) {
+    // ... (This function is unchanged) ...
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -470,9 +523,9 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                             icon: const Icon(Icons.check_circle,
                                 color: Colors.green, size: 45),
                             onPressed: () {
-                              Navigator.pop(context);
+                              Navigator.pop(context); // Close the dialog
                               if (onBooked != null) {
-                                onBooked();
+                                onBooked(); // Call _bookSlot
                               }
                             },
                           ),

@@ -5,12 +5,9 @@ import 'package:flutter_application_1/login-signup.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
-// Use lowercase to match your file system if that's the case
 import 'student_BrowseList.dart'; 
 import 'lecturer_dashboard.dart';
-// Note: You are also missing 'staff_dashboard.dart' import
-import 'staff_dashboard.dart';
-
+import 'staff_dashboard.dart'; // Assumed import
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

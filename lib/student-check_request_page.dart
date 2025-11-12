@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
-// 1. A model to hold the booking data from the new API
 class PendingBooking {
   final int bookingId;
   final String roomName;
@@ -33,11 +33,8 @@ class PendingBooking {
   }
 }
 
-// 2. Changed to a StatefulWidget
 class CheckRequestPage extends StatefulWidget {
-  // 3. It now requires the userId to fetch the correct data
   final int userId;
-
   const CheckRequestPage({Key? key, required this.userId}) : super(key: key);
 
   @override
@@ -45,12 +42,14 @@ class CheckRequestPage extends StatefulWidget {
 }
 
 class _CheckRequestPageState extends State<CheckRequestPage> {
-  // 4. State variables to manage loading and data
+  // 2. ✅ ADDED STORAGE AND TOKEN
+  final _storage = const FlutterSecureStorage();
+  String? _token;
+
   bool _isLoading = true;
   PendingBooking? _booking;
   String? _errorMsg;
 
-  // 5. Dynamic base URL for iOS/Android
   String get _baseUrl {
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000';
@@ -61,47 +60,80 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
   @override
   void initState() {
     super.initState();
-    // 6. Fetch data when the page loads
-    _fetchPendingBooking();
+    // 3. ✅ MODIFIED: Load token first, then fetch
+    _loadTokenAndFetch();
   }
 
-  // 7. Function to call the new API endpoint
-  Future<void> _fetchPendingBooking() async {
+  // 4. ✅ ADDED: New function
+  Future<void> _loadTokenAndFetch() async {
+    final token = await _storage.read(key: 'jwt_token');
+    if (mounted) {
+      setState(() { _token = token; });
+    }
+    _fetchPendingBooking(token);
+  }
+  
+  // 5. ✅ MODIFIED: Function now accepts and sends token
+  Future<void> _fetchPendingBooking(String? token) async {
+    if (token == null) {
+      if (mounted) {
+        setState(() {
+          _errorMsg = "Error: Not logged in.";
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
       _errorMsg = null;
     });
 
     try {
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/user/${widget.userId}/pending-booking'));
+      final response = await http.get(
+        // ✅ UPDATED: Use new user-specific route (no ID in URL)
+        Uri.parse('$_baseUrl/api/user/pending-booking'),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token' 
+        },
+      );
 
       if (response.statusCode == 200) {
-        // Check if the response body is null or empty
         if (response.body.isNotEmpty && response.body != 'null') {
           final data = json.decode(response.body);
-          setState(() {
-            _booking = PendingBooking.fromJson(data);
-          });
+          if (mounted) {
+            setState(() {
+              _booking = PendingBooking.fromJson(data);
+            });
+          }
         } else {
-          // API returned null, meaning no pending booking
-          setState(() {
-            _booking = null;
-          });
+          if (mounted) {
+            setState(() {
+              _booking = null;
+            });
+          }
         }
       } else {
-        setState(() {
-          _errorMsg = 'Failed to load booking: ${response.body}';
-        });
+        if(mounted) {
+          setState(() {
+            _errorMsg = 'Failed to load booking: ${response.body}';
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _errorMsg = 'Error connecting to server: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMsg = 'Error connecting to server: $e';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -113,7 +145,6 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title (white area)
             const Padding(
               padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 8),
               child: Text(
@@ -132,8 +163,6 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
                 ),
               ),
             ),
-
-            // The blue rounded background area
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -163,7 +192,6 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
                               ),
                             ],
                           ),
-                          // 8. Build the content based on loading/error/data state
                           child: _buildContent(),
                         ),
                         const SizedBox(height: 40),
@@ -179,7 +207,7 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
     );
   }
 
-  // 9. A helper widget to show the correct UI
+  // 6. ✅ MODIFIED: Image widget now sends token
   Widget _buildContent() {
     if (_isLoading) {
       return const SizedBox(
@@ -203,9 +231,7 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
       );
     }
 
-    // Use `_booking` (which can be null) to decide what to show
     if (_booking == null) {
-      // Show "No pending requests"
       return SizedBox(
         height: 160,
         child: Center(
@@ -219,9 +245,17 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
         ),
       );
     }
+    
+    // Show loader if token isn't ready for the image
+    if (_token == null) {
+       return const SizedBox(
+        height: 160,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-    // 10. Show the dynamic booking card
-    // Note: The API sends back the image path, so we add _baseUrl
     final String fullImageUrl = '$_baseUrl${_booking!.imageUrl}';
 
     return Container(
@@ -239,12 +273,11 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
       ),
       child: Row(
         children: [
-          // Room image
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            // 11. Changed Image.asset to Image.network
             child: Image.network(
               fullImageUrl,
+              headers: {'Authorization': 'Bearer $_token'}, // <-- Add header
               width: 120,
               height: 90,
               fit: BoxFit.cover,
@@ -266,7 +299,6 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 12. Use dynamic data from the _booking object
                 Text(
                   '${_booking!.roomName} (${_booking!.roomType})',
                   style: const TextStyle(
@@ -292,7 +324,6 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      // 13. Status color can also be dynamic if needed
                       color: Colors.orange,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: const [
@@ -304,7 +335,6 @@ class _CheckRequestPageState extends State<CheckRequestPage> {
                       ],
                     ),
                     child: Text(
-                      // 14. Capitalize the status
                       _booking!.status[0].toUpperCase() +
                           _booking!.status.substring(1),
                       style: const TextStyle(

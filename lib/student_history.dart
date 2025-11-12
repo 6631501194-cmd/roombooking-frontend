@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
 
-// 1. Model for the history data from the API
+// 2. UPDATED MODEL
 class BookingHistory {
   final int bookingId;
   final String status;
@@ -39,11 +40,9 @@ class BookingHistory {
   }
 }
 
-// 2. Converted to StatefulWidget
+// 3. CONVERTED TO STATEFULWIDGET
 class HistoryPage extends StatefulWidget {
-  // 3. Added userId to know whose history to fetch
   final int userId;
-
   const HistoryPage({super.key, required this.userId});
 
   @override
@@ -51,7 +50,8 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  // 4. State variables for loading, data, and errors
+  // 4. ADDED STATE
+  final _storage = const FlutterSecureStorage();
   bool _isLoading = true;
   List<BookingHistory> _historyItems = [];
   String? _errorMsg;
@@ -62,7 +62,7 @@ class _HistoryPageState extends State<HistoryPage> {
   static const approvedGreen = Color(0xFF18A05B);
   static const rejectedRed = Color(0xFFD9534F);
 
-  // 5. Dynamic base URL
+  // 5. ADDED URL GETTER
   String get _baseUrl {
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000';
@@ -73,46 +73,71 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    // 6. Fetch data on page load
+    // 6. FETCH DATA ON LOAD
     _fetchHistory();
   }
 
-  // 7. New function to call the history API
+  // 7. ✅ MODIFIED: Function now sends token
   Future<void> _fetchHistory() async {
+    if (widget.userId == 0) {
+      setState(() {
+         _isLoading = false;
+        _errorMsg = "Error: No user ID was provided.";
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMsg = null;
     });
 
     try {
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/user/${widget.userId}/history'));
+      final token = await _storage.read(key: 'jwt_token');
+      if (token == null) {
+        throw Exception('Token not found. Please log in again.');
+      }
+      
+      final response = await http.get(
+        // ✅ UPDATED: Use new user-specific route (no ID in URL)
+        Uri.parse('$_baseUrl/api/user/history'),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token' 
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        final List<BookingHistory> parsedItems =
-            data.map((json) => BookingHistory.fromJson(json)).toList();
-
-        setState(() {
-          _historyItems = parsedItems;
-        });
+         if (mounted) {
+          setState(() {
+            _historyItems =
+                data.map((json) => BookingHistory.fromJson(json)).toList();
+          });
+         }
       } else {
-        setState(() {
-          _errorMsg = 'Failed to load history: ${response.body}';
-        });
+        if (mounted) {
+          setState(() {
+            _errorMsg = 'Failed to load history: ${response.body}';
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _errorMsg = 'Error connecting to server: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMsg = 'Error: ${e.toString()}';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // 8. Helper to build the main content
+  // 8. ADDED HELPER WIDGET
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(
@@ -148,7 +173,6 @@ class _HistoryPageState extends State<HistoryPage> {
       );
     }
 
-    // 9. Use the dynamic list from the state
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: _historyItems.length,
@@ -161,11 +185,10 @@ class _HistoryPageState extends State<HistoryPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 8),
               child: Text(
-                item.date, // Use data from API
+                item.date,
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontStyle: FontStyle.italic,
@@ -174,8 +197,6 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
             ),
-
-            // Card
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF4FF),
@@ -193,14 +214,13 @@ class _HistoryPageState extends State<HistoryPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ✅ Left Column (Room Info)
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            item.roomName, // Use data from API
+                            item.roomName,
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 18,
@@ -209,7 +229,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '(${item.roomType})', // Use data from API
+                            '(${item.roomType})',
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 14,
@@ -218,7 +238,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            item.time, // Use data from API
+                            item.time,
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 16,
@@ -229,15 +249,11 @@ class _HistoryPageState extends State<HistoryPage> {
                         ],
                       ),
                     ),
-
-                    // Divider
                     const VerticalDivider(
                       width: 28,
                       thickness: 1.4,
                       color: Colors.black,
                     ),
-
-                    // ✅ Right Column (Status)
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -247,13 +263,13 @@ class _HistoryPageState extends State<HistoryPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: statusColor, // Dynamic color
+                              color: statusColor,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              statusText, // Dynamic text
+                              statusText,
                               style: const TextStyle(
-                                color: Colors.black, // Changed to black for better contrast on green/red
+                                color: Colors.black,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -269,15 +285,13 @@ class _HistoryPageState extends State<HistoryPage> {
                             ),
                           ),
                           Text(
-                            item.approverName, // Use data from API
+                            item.approverName,
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          
-                          // 10. Conditionally show reject reason
                           if (!isApproved &&
                               item.rejectReason != null &&
                               item.rejectReason!.isNotEmpty) ...[
@@ -289,7 +303,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 color: const Color(0xFFD6E6FF),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                    color: Color(0xFF8BB4FF), width: 1.2),
+                                    color: const Color(0xFF8BB4FF), width: 1.2),
                                 boxShadow: const [
                                   BoxShadow(
                                     color: Color.fromARGB(30, 0, 0, 0),
@@ -299,7 +313,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 ],
                               ),
                               child: Text(
-                                'Reason: ${item.rejectReason}', // Use data from API
+                                'Reason: ${item.rejectReason}',
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 13,
@@ -330,7 +344,6 @@ class _HistoryPageState extends State<HistoryPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Title
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
               child: Align(
@@ -351,7 +364,6 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
             ),
-            // Blue background
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -362,7 +374,6 @@ class _HistoryPageState extends State<HistoryPage> {
                     topRight: Radius.circular(50),
                   ),
                 ),
-                // 11. Call the dynamic content builder
                 child: _buildContent(),
               ),
             ),
