@@ -356,28 +356,28 @@ class _LecturerHomePageState extends State<LecturerHomePage> {
                           _isLoading
                               ? "..."
                               : (_stats?.availableCount.toString() ?? "0"),
-                          "Available Slots (Today)",
+                          "Available Slots",
                         ),
                         const SizedBox(height: 16),
                         _buildStatCard(
                           _isLoading
                               ? "..."
                               : (_stats?.reservedCount.toString() ?? "0"),
-                          "Reserved Slots (Today)",
+                          "Reserved Slots",
                         ),
                         const SizedBox(height: 16),
                         _buildStatCard(
                           _isLoading
                               ? "..."
                               : (_stats?.pendingCount.toString() ?? "0"),
-                          "Pending Slots (Today)",
+                          "Pending Slots",
                         ),
                         const SizedBox(height: 16),
                         _buildStatCard(
                           _isLoading
                               ? "..."
                               : (_stats?.disabledCount.toString() ?? "0"),
-                          "Disabled Slots (Total)",
+                          "Disabled Slots",
                         ),
                         const SizedBox(height: 16), 
 
