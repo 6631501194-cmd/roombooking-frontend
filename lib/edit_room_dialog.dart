@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart'; // ✅ USE FILE PICKER
 import 'package:path_provider/path_provider.dart';
 
 class EditRoomDialog extends StatefulWidget {
@@ -24,9 +24,13 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     super.initState();
     _roomNameController = TextEditingController(text: widget.room['name']);
     _roomTypeController = TextEditingController(text: widget.room['type']);
-    _imagePathController = TextEditingController(
-      text: widget.room['image'].split('/').last,
-    );
+    
+    // Just show the filename, not the full ugly URL/Path
+    String currentImage = widget.room['image'] ?? '';
+    if (currentImage.isNotEmpty) {
+      currentImage = currentImage.split('/').last;
+    }
+    _imagePathController = TextEditingController(text: currentImage);
   }
 
   @override
@@ -37,27 +41,28 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-
-    if (pickedFile == null) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+  // ✅ PICK IMAGE FROM FILE SYSTEM (Mac/Simulator compatible)
+  Future<void> _pickImage() async {
     try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
+
+      if (result == null || result.files.single.path == null) return;
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Copy file to app directory so we can access it later
+      final File originalFile = File(result.files.single.path!);
       final appDir = await getApplicationDocumentsDirectory();
-      final String fileName =
-          '${DateTime.now().millisecondsSinceEpoch}-${pickedFile.path.split('/').last}';
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}-${result.files.single.name}';
       final String localImagePath = '${appDir.path}/$fileName';
 
-      final File newImage = await File(pickedFile.path).copy(localImagePath);
+      final File newImage = await originalFile.copy(localImagePath);
 
       setState(() {
         _newImagePath = newImage.path;
-        _imagePathController.text = newImage.path.split('/').last;
+        _imagePathController.text = result.files.single.name;
         _isLoading = false;
       });
     } catch (e) {
@@ -65,9 +70,9 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
       }
     }
   }
@@ -77,12 +82,13 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
     final type = _roomTypeController.text;
 
     if (name.isEmpty || type.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
       return;
     }
 
+    // Return the new path if selected, otherwise return the old URL
     final String finalImagePath = _newImagePath ?? widget.room['image'];
 
     final result = {'name': name, 'type': type, 'image': finalImagePath};
@@ -106,7 +112,7 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                       children: [
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
-                        Text("Saving image..."),
+                        Text("Processing image..."),
                       ],
                     ),
                   ),
@@ -115,53 +121,50 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "Edit",
+                      "Edit Room",
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 24),
                     _buildTextField(
                       controller: _roomNameController,
-                      label: "New Room name",
-                      hint: "Room name",
+                      label: "Room Name",
+                      hint: "Enter room name",
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _roomTypeController,
                       label: "Room Type",
-                      hint: "Description",
+                      hint: "Enter room type",
                     ),
                     const SizedBox(height: 16),
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         "Image",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                       ),
                     ),
                     const SizedBox(height: 8),
+                    
+                    // ✅ TAP INPUT TO PICK FILE
                     GestureDetector(
-                      onTap: () => _pickImage(ImageSource.gallery),
-                      child: TextField(
-                        controller: _imagePathController,
-                        enabled: false,
-                        decoration: InputDecoration(
-                          hintText: "image_roomC.jpg",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      onTap: _pickImage, 
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: _imagePathController,
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            hintText: "Tap to select image",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            suffixIcon: const Icon(Icons.file_upload_outlined),
                           ),
-                          disabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[400]!),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          suffixIcon: const Icon(Icons.file_upload_outlined),
                         ),
                       ),
                     ),
@@ -177,10 +180,7 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 12,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                           ),
                           child: const Text("Save"),
                         ),
@@ -192,10 +192,7 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 40,
-                              vertical: 12,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                           ),
                           child: const Text("Cancel"),
                         ),
@@ -226,10 +223,7 @@ class _EditRoomDialogState extends State<EditRoomDialog> {
           decoration: InputDecoration(
             hintText: hint,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
       ],
