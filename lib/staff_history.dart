@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:collection';
 
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
@@ -16,6 +17,14 @@ class HistoryPage extends StatelessWidget {
       _Booking(date: DateTime(2025, 11, 23), start: '08:00', end: '10:00', room: 'Room 3', requester: 'John Smith', approved: true),
       _Booking(date: DateTime(2025, 11, 25), start: '09:00', end: '11:00', room: 'Room 4', requester: 'Mike Chan', approved: false),
     ];
+
+    //Group by date
+    final Map<String, List<_Booking>> grouped = {};
+    for (var b in items) {
+      final key = _fmtDate(b.date);
+      grouped.putIfAbsent(key, () => []);
+      grouped[key]!.add(b);
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -50,22 +59,20 @@ class HistoryPage extends StatelessWidget {
                     topRight: Radius.circular(50),
                   ),
                 ),
-                child: ListView.builder(
+                child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                  itemCount: items.length,
-                  itemBuilder: (context, i) {
-                    final it = items[i];
-                    final statusColor = it.approved ? approvedGreen : rejectedRed;
-                    final statusText = it.approved ? 'Approved' : 'Rejected';
+                  children: grouped.entries.map((entry) {
+                    final dateStr = entry.key;
+                    final bookings = entry.value;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Date
+                        // Date title
                         Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 8),
+                          padding: const EdgeInsets.only(left: 4, bottom: 8, top: 8),
                           child: Text(
-                            _fmtDate(it.date),
+                            dateStr,
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontStyle: FontStyle.italic,
@@ -75,7 +82,7 @@ class HistoryPage extends StatelessWidget {
                           ),
                         ),
 
-                        // Card
+                        //Container collect  the same day booking 
                         Container(
                           decoration: BoxDecoration(
                             color: const Color(0xFFEFF4FF),
@@ -85,147 +92,142 @@ class HistoryPage extends StatelessWidget {
                               BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(0, 4)),
                             ],
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          child: IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Left Column
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                          child: Column(
+                            children: bookings.map((it) {
+                              final statusColor = it.approved ? approvedGreen : rejectedRed;
+                              final statusText = it.approved ? 'Approved' : 'Rejected';
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        it.room,
-                                        style: const TextStyle(
-                                          color: textDark,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      const Text(
-                                        '(Meeting room)',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '${it.start}-${it.end}',
-                                        style: const TextStyle(
-                                          color: textDark,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Requested by ${it.requester}',
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      // ✅ Always show reason box below "Requested by"
-                                      
-                                    ],
-                                  ),
-                                ),
-
-                                // Divider
-                                const VerticalDivider(
-                                  width: 28,
-                                  thickness: 1.4,
-                                  color: Colors.black,
-                                ),
-
-                                // Right Column (centered)
-                                Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      // ✅ Status pill
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: statusColor,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          statusText,
-                                          style: const TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-
-                                      // ✅ Dynamic text: Approved by / Rejected by
-                                      Text(
-                                        it.approved ? 'Approved by' : 'Rejected by',
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const Text(
-                                        'Aj. John',
-                                        style: TextStyle(
-                                          color: textDark,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
+                                      // Left Column
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              it.room,
+                                              style: const TextStyle(
+                                                color: textDark,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            const Text(
+                                              '(Meeting room)',
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              '${it.start}-${it.end}',
+                                              style: const TextStyle(
+                                                color: textDark,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Requested by ${it.requester}',
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
 
-                                      // 🔹 Extra Reason Box for Rejected
-                                      if (!it.approved) ...[
-                                        const SizedBox(height: 10),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFD6E6FF),
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: Color(0xFF8BB4FF), width: 1.2),
-                                            boxShadow: const [
-                                              BoxShadow(
-                                                color: Color.fromARGB(30, 0, 0, 0),
-                                                blurRadius: 4,
-                                                offset: Offset(0, 2),
+                                      // Divider
+                                      const VerticalDivider(
+                                        width: 28,
+                                        thickness: 1.4,
+                                        color: Color.fromARGB(255, 150, 146, 146),
+                                      ),
+
+                                      // Right Column
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: statusColor,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(
+                                                statusText,
+                                                style: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              it.approved ? 'Approved by' : 'Rejected by',
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            const Text(
+                                              'Aj. John',
+                                              style: TextStyle(
+                                                color: textDark,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            if (!it.approved) ...[
+                                              const SizedBox(height: 10),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Color(0xFFD6E6FF),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  border: Border.all(color: Color(0xFF8BB4FF), width: 1.2),
+                                                ),
+                                                child: const Text(
+                                                  'Reason: The room will be renovated soon.',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.black87,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
                                               ),
                                             ],
-                                          ),
-                                          child: const Text(
-                                            'Reason: The room will be renovated soon.',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.black87,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            }).toList(),
                           ),
                         ),
 
                         const SizedBox(height: 14),
                       ],
                     );
-                  },
+                  }).toList(),
                 ),
               ),
             ),
