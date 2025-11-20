@@ -185,11 +185,11 @@ class _HistoryPageState extends State<HistoryPage> {
                     children: [
                       const Text(
                         "Requested by: ",
-                        style: TextStyle(color: Colors.black87, fontSize: 13),
+                        style: TextStyle(color: Colors.black87, fontSize: 14),
                       ),
                       Text(
                         item.requesterName,
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textDark),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textDark),
                       ),
                     ],
                   ),
@@ -208,7 +208,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       Expanded(
                         child: Text(
                           isApproved ? "Approved" : "Rejected",
-                          style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600),
                         ),
                       ),
 
@@ -240,7 +240,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                       child: Text(
                         "Reason: ${item.rejectReason}",
-                        style: TextStyle(fontSize: 12, color: Colors.red.shade900, fontStyle: FontStyle.italic),
+                        style: TextStyle(fontSize: 14, color: Colors.black, fontStyle: FontStyle.italic),
                       ),
                     ),
                   ],

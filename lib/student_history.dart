@@ -186,7 +186,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       Expanded(
                         child: RichText(
                           text: TextSpan(
-                            style: const TextStyle(color: Colors.black87, fontSize: 13),
+                            style: const TextStyle(color: Colors.black87, fontSize: 15),
                             children: [
                               TextSpan(text: isApproved ? "Approved by: " : "Rejected by: "),
                               TextSpan(text: item.approverName, style: const TextStyle(fontWeight: FontWeight.bold, color: textDark)),
@@ -223,7 +223,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           child: Text(
                             "Reason: ${item.rejectReason}",
-                            style: TextStyle(fontSize: 12, color: Colors.red.shade900, fontStyle: FontStyle.italic),
+                            style: TextStyle(fontSize: 14, color: Colors.black, fontStyle: FontStyle.italic),
                           ),
                         ),
                       ]
