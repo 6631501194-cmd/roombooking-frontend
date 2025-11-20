@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'login-signin.dart';
 import 'login-signup.dart';
 import 'staff_dashboard.dart';
@@ -125,7 +126,7 @@ class _StaffNavigationState extends State<StaffNavigation> {
   final List<Widget> _pages = const [
     StaffDashboard(),
     StaffBrowselist(),
-    HistoryPage(),
+    StaffHistoryPage(),
   ];
 
   void _onItemTapped(int index) {

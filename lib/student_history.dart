@@ -2,45 +2,47 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // 1. IMPORT
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-// 2. UPDATED MODEL
-class BookingHistory {
+// 1. Data Model (Removed requesterName)
+class StudentBookingHistory {
   final int bookingId;
-  final String status;
-  final String? rejectReason;
-  final String date;
   final String roomName;
   final String roomType;
   final String time;
-  final String approverName;
+  final String date;
+  final String approverName;  // Lecturer/Staff
+  final String imageUrl;
+  final String status; // 'reserved' or 'rejected'
+  final String? rejectReason;
 
-  BookingHistory({
+  StudentBookingHistory({
     required this.bookingId,
-    required this.status,
-    this.rejectReason,
-    required this.date,
     required this.roomName,
     required this.roomType,
     required this.time,
+    required this.date,
     required this.approverName,
+    required this.imageUrl,
+    required this.status,
+    this.rejectReason,
   });
 
-  factory BookingHistory.fromJson(Map<String, dynamic> json) {
-    return BookingHistory(
+  factory StudentBookingHistory.fromJson(Map<String, dynamic> json) {
+    return StudentBookingHistory(
       bookingId: json['bookingId'],
-      status: json['status'],
-      rejectReason: json['rejectReason'],
-      date: json['date'],
       roomName: json['roomName'],
       roomType: json['roomType'],
       time: json['time'],
-      approverName: json['approverName'],
+      date: json['bookingDate'] ?? json['date'], 
+      approverName: json['approverName'] ?? 'N/A',
+      imageUrl: json['imageUrl'] ?? '',
+      status: json['status'],
+      rejectReason: json['rejectReason'],
     );
   }
 }
 
-// 3. CONVERTED TO STATEFULWIDGET
 class HistoryPage extends StatefulWidget {
   final int userId;
   const HistoryPage({super.key, required this.userId});
@@ -50,328 +52,214 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  // 4. ADDED STATE
-  final _storage = const FlutterSecureStorage();
+  List<StudentBookingHistory> _historyItems = [];
   bool _isLoading = true;
-  List<BookingHistory> _historyItems = [];
-  String? _errorMsg;
+  String? _error;
+  final _storage = const FlutterSecureStorage();
+  String? _token;
 
-  // Colors
-  static const borderGrey = Color.fromARGB(255, 168, 183, 194);
-  static const textDark = Color(0xFF0F1621);
-  static const approvedGreen = Color(0xFF18A05B);
-  static const rejectedRed = Color(0xFFD9534F);
-
-  // 5. ADDED URL GETTER
   String get _baseUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000';
-    }
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
     return 'http://localhost:3000';
   }
 
   @override
   void initState() {
     super.initState();
-    // 6. FETCH DATA ON LOAD
-    _fetchHistory();
+    _loadTokenAndFetch();
   }
 
-  // 7. ✅ MODIFIED: Function now sends token
-  Future<void> _fetchHistory() async {
-    if (widget.userId == 0) {
-      setState(() {
-         _isLoading = false;
-        _errorMsg = "Error: No user ID was provided.";
-      });
+  Future<void> _loadTokenAndFetch() async {
+    final token = await _storage.read(key: 'jwt_token');
+    if (mounted) {
+      setState(() { _token = token; });
+    }
+    _fetchHistory(token);
+  }
+
+  // 2. Fetch logic using the Student API
+  Future<void> _fetchHistory(String? token) async {
+    if (token == null) {
+      setState(() { _isLoading = false; _error = "Error: Not logged in"; });
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMsg = null;
-    });
-
     try {
-      final token = await _storage.read(key: 'jwt_token');
-      if (token == null) {
-        throw Exception('Token not found. Please log in again.');
-      }
-      
-      final response = await http.get(
-        // ✅ UPDATED: Use new user-specific route (no ID in URL)
-        Uri.parse('$_baseUrl/api/user/history'),
-        headers: { 
+      // ✅ Using the API filtered by user ID from the token
+      final uri = Uri.parse('$_baseUrl/api/user/history'); 
+      final resp = await http.get(
+        uri,
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token' 
+          'Authorization': 'Bearer $token'
         },
       );
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-         if (mounted) {
-          setState(() {
-            _historyItems =
-                data.map((json) => BookingHistory.fromJson(json)).toList();
-          });
-         }
-      } else {
+      if (resp.statusCode == 200) {
+        final List<dynamic> data = json.decode(resp.body);
         if (mounted) {
           setState(() {
-            _errorMsg = 'Failed to load history: ${response.body}';
+            // NOTE: The API needs to include room_id for imageUrl construction
+            _historyItems = data.map((json) => StudentBookingHistory.fromJson(json)).toList(); 
+            _isLoading = false;
           });
         }
+      } else {
+        if (mounted) setState(() { _isLoading = false; _error = "Failed to load: ${resp.body}"; });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = 'Error: ${e.toString()}';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() { _isLoading = false; _error = "Error: $e"; });
     }
   }
 
-  // 8. ADDED HELPER WIDGET
-  Widget _buildContent() {
-    if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+  Future<void> _refresh() async {
+    setState(() { _isLoading = true; _error = null; });
+    await _fetchHistory(_token);
+  }
 
-    if (_errorMsg != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Text(
-            _errorMsg!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.red, fontSize: 16),
-          ),
-        ),
-      );
-    }
+  // 3. Helper to build the individual booking card UI
+  Widget _buildBookingCard(StudentBookingHistory item) {
+    const textDark = Color(0xFF0F1621);
+    final isApproved = item.status.toLowerCase() == 'reserved';
+    final fullImageUrl = item.imageUrl.isNotEmpty ? '$_baseUrl${item.imageUrl}' : ''; 
+    
+    final statusColor = isApproved ? const Color(0xFF18A05B) : const Color(0xFFD9534F);
+    final statusText = isApproved ? "Approved" : "Rejected";
 
-    if (_historyItems.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text(
-            'No booking history found.',
-            style: TextStyle(color: Colors.black54, fontSize: 16),
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      itemCount: _historyItems.length,
-      itemBuilder: (context, i) {
-        final item = _historyItems[i];
-        final bool isApproved = item.status == 'reserved';
-        final statusColor = isApproved ? approvedGreen : rejectedRed;
-        final statusText = isApproved ? 'Approved' : 'Rejected';
-
-        return Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 4, bottom: 8),
-              child: Text(
-                item.date,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontStyle: FontStyle.italic,
-                  color: textDark,
-                  fontSize: 20,
-                ),
-              ),
+            // Image: only show network image when we have a URL, otherwise show placeholder
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: fullImageUrl.isEmpty
+                  ? Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    )
+                  : Image.network(
+                      fullImageUrl,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      // supply Authorization header only if token exists
+                      headers: _token != null ? {'Authorization': 'Bearer $_token'} : null, 
+                      errorBuilder: (c, e, s) => Container(
+                        width: 80, height: 80, color: Colors.grey[300], 
+                        child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
+                    ),
             ),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF4FF),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderGrey),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Color(0x1A000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 4)),
+            const SizedBox(width: 12),
+            
+            // Main Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${item.roomName} (${item.roomType})",
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.time,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // ✅ REQUESTED BY ROW REMOVED, APPROVER MOVED UP
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        isApproved ? Icons.verified_user : Icons.block,
+                        size: 18,
+                        color: statusColor
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.black87, fontSize: 13),
+                            children: [
+                              TextSpan(text: isApproved ? "Approved by: " : "Rejected by: "),
+                              TextSpan(text: item.approverName, style: const TextStyle(fontWeight: FontWeight.bold, color: textDark)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      // Status Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: statusColor, width: 0.5)
+                        ),
+                        child: Text(
+                          statusText, 
+                          style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.bold)
+                        ),
+                      )
+                    ],
+                  ),
+
+                      // Rejection Reason (if rejected)
+                      if (!isApproved && item.rejectReason != null && item.rejectReason!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            "Reason: ${item.rejectReason}",
+                            style: TextStyle(fontSize: 12, color: Colors.red.shade900, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ]
                 ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            item.roomName,
-                            style: const TextStyle(
-                              color: textDark,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '(${item.roomType})',
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            item.time,
-                            style: const TextStyle(
-                              color: textDark,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-                    ),
-                    const VerticalDivider(
-                      width: 28,
-                      thickness: 1.4,
-                      color: Colors.black,
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              statusText,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            isApproved ? 'Approved by' : 'Rejected by',
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            item.approverName,
-                            style: const TextStyle(
-                              color: textDark,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (!isApproved &&
-                              item.rejectReason != null &&
-                              item.rejectReason!.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD6E6FF),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: const Color(0xFF8BB4FF), width: 1.2),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color.fromARGB(30, 0, 0, 0),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                'Reason: ${item.rejectReason}',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
-            const SizedBox(height: 14),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    const textDark = Color(0xFF0F1621);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'History',
-                  style: const TextStyle(
-                    color: textDark,
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                          offset: Offset(0, 1),
-                          blurRadius: 2,
-                          color: Color.fromARGB(30, 0, 0, 0)),
-                    ],
-                  ),
-                ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Text(
+                "History",
+                style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ),
             Expanded(
               child: Container(
-                width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Color(0xFFB9D6FF),
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    topRight: Radius.circular(50),
+                    topLeft: Radius.circular(40),
+                    topRight: Radius.circular(40),
                   ),
                 ),
                 child: _buildContent(),
@@ -379,6 +267,91 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // 4. Content builder with Grouping Logic (Copied from staff_history.dart)
+  Widget _buildContent() {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) return Center(child: Text(_error!, style: const TextStyle(color: Colors.red)));
+    if (_historyItems.isEmpty) {
+      return const Center(child: Text("No booking history found", style: TextStyle(fontSize: 16, color: Colors.black54)));
+    }
+
+    // --- Grouping Logic ---
+    final Map<String, List<StudentBookingHistory>> grouped = {};
+    for (var item in _historyItems) {
+      final key = item.date; 
+      grouped.putIfAbsent(key, () => []);
+      grouped[key]!.add(item);
+    }
+    
+    // Sort by date descending (newest first)
+    final List<MapEntry<String, List<StudentBookingHistory>>> sortedGroups = grouped.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
+
+    const textDark = Color(0xFF0F1621);
+    
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        itemCount: sortedGroups.length,
+        itemBuilder: (context, index) {
+          final group = sortedGroups[index];
+          final dateStr = group.key;
+          final bookings = group.value;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date Header
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8, top: 8),
+                child: Text(
+                  dateStr,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontStyle: FontStyle.italic,
+                    color: textDark,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              
+              // Single Container holding all bookings for this day
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF4FF),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+                  ],
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: List.generate(bookings.length, (i) {
+                    final item = bookings[i];
+                    return Column(
+                      children: [
+                        _buildBookingCard(item),
+                        // Add a Divider between items, but not after the last one
+                        if (i < bookings.length - 1) 
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Divider(height: 1, thickness: 1, color: Colors.black12),
+                          ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
+          );
+        },
       ),
     );
   }
