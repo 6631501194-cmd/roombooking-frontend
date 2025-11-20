@@ -19,6 +19,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
   List<dynamic> _allRooms = [];
   List<dynamic> _foundRooms = [];
   
+  // Key to force images to reload (bust cache)
   int _refreshKey = 0; 
 
   bool _isLoading = true;
@@ -68,6 +69,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
           setState(() {
             _allRooms = data;
             _isLoading = false;
+            
             _refreshKey = DateTime.now().millisecondsSinceEpoch; 
 
             if (_searchController.text.isEmpty) {
@@ -101,42 +103,89 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
     });
   }
 
+  // ✅ 1. FIXED ADD ROOM FUNCTION (Calls POST /api/rooms)
   Future<void> _addRoom() async {
-    final newRoomData = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => const AddRoomDialog(),
-    );
+  // Get data from the dialog
+  final newRoomData = await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (context) => const AddRoomDialog(),
+  );
 
-    if (newRoomData != null) {
-      setState(() => _isLoading = true);
-      try {
-        final uri = Uri.parse('$_baseUrl/api/rooms');
-        var request = http.MultipartRequest('POST', uri);
-        request.headers['Authorization'] = 'Bearer $_token';
-        request.fields['room_name'] = newRoomData['name'];
-        request.fields['room_type'] = newRoomData['type'];
-        if (newRoomData['image'] != null) {
-          request.files.add(await http.MultipartFile.fromPath('image', newRoomData['image']));
-        }
-        var response = await request.send();
-        if (response.statusCode == 201) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Room added successfully!"), backgroundColor: Colors.green),
-          );
-          _fetchRooms(_token); 
-        }
-      } catch (e) {
-        setState(() => _isLoading = false);
+  // If user cancelled or missing data, stop
+  if (newRoomData == null || newRoomData['image'] == null) return;
+
+  setState(() => _isLoading = true);
+
+  try {
+    final uri = Uri.parse('$_baseUrl/api/rooms');
+    var request = http.MultipartRequest('POST', uri);
+
+    // Ensure token exists (optional debug check)
+    if (_token == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Missing auth token"), backgroundColor: Colors.red),
+        );
       }
+      setState(() => _isLoading = false);
+      return;
     }
-  }
 
+    request.headers['Authorization'] = 'Bearer $_token';
+
+    // Assign correct field names for API
+    request.fields['room_name'] = newRoomData['name'];
+    request.fields['room_type'] = newRoomData['type'];
+
+    // Add image file
+    if (newRoomData['image'] != null && newRoomData['image'].isNotEmpty) {
+      request.files.add(await http.MultipartFile.fromPath(
+        'image',
+        newRoomData['image'],
+      ));
+    }
+
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+
+    // Debug: print server response for troubleshooting
+    debugPrint('Add room response: ${response.statusCode} ${response.body}');
+
+    // Accept 201 (Created) OR 200 (OK) if server returns 200
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Room added successfully!"), backgroundColor: Colors.green),
+        );
+      }
+      _fetchRooms(_token); // Refresh the list
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to add room: ${response.statusCode} ${response.body}"), backgroundColor: Colors.red),
+        );
+      }
+      setState(() => _isLoading = false);
+    }
+  } catch (e) {
+    debugPrint('Add room error: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
+    setState(() => _isLoading = false);
+  }
+}
+
+  // Function to update room status (Edit button helper)
   Future<void> _updateRoom(int roomId, Map<String, dynamic> updatedData) async {
     setState(() => _isLoading = true);
     try {
       final uri = Uri.parse('$_baseUrl/api/rooms/$roomId');
       var request = http.MultipartRequest('PUT', uri);
       request.headers['Authorization'] = 'Bearer $_token';
+      
       request.fields['room_name'] = updatedData['name'];
       request.fields['room_type'] = updatedData['type'];
 
@@ -149,22 +198,26 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Room updated successfully!"), backgroundColor: Colors.green),
-        );
-        _fetchRooms(_token); 
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Room updated successfully!"), backgroundColor: Colors.green),
+          );
+        }
+        _fetchRooms(_token);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Update failed: ${response.body}"), backgroundColor: Colors.red),
-        );
-        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Update failed: ${response.body}"), backgroundColor: Colors.red),
+          );
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       setState(() => _isLoading = false);
     }
   }
 
-  // ✅ NEW FUNCTION: Change Room Status (Enable/Disable)
+  // Function to change room status (Enable/Disable button)
   Future<void> _changeRoomStatus(int roomId, String newDbStatus) async {
     setState(() => _isLoading = true);
     try {
@@ -179,17 +232,16 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
       );
 
       if (resp.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-             content: Text("Room is now ${newDbStatus == 'enable' ? 'Enabled' : 'Disabled'}"), 
-             backgroundColor: newDbStatus == 'enable' ? Colors.green : Colors.orange
-           ),
-        );
-        _fetchRooms(_token); // Refresh list to update buttons
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text("Room is now ${newDbStatus == 'enable' ? 'Enabled' : 'Disabled'}"), 
+               backgroundColor: newDbStatus == 'enable' ? Colors.green : Colors.orange
+             ),
+          );
+        }
+        _fetchRooms(_token); 
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Status update failed: ${resp.body}"), backgroundColor: Colors.red),
-        );
         setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -216,7 +268,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: _addRoom,
+                    onPressed: _addRoom, // ✅ Calls the working _addRoom function
                     icon: Container(
                       width: 28, height: 28,
                       decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
@@ -289,7 +341,6 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                   ? '$_baseUrl${room['image_url']}?v=$_refreshKey' 
                                   : '';
 
-                              // UI Logic
                               final String currentStatus = statusDb == 'enable' ? "Available" : "Disabled";
                               final bool isAvailable = statusDb == 'enable';
 
@@ -345,6 +396,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                               ),
                                               const SizedBox(height: 8),
                                               
+                                              // EDIT BUTTON
                                               _buildStaffButton(
                                                 icon: Icons.edit, label: "Edit", color: const Color(0xFF222558),
                                                 onPressed: () async {
@@ -366,13 +418,12 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                               ),
                                               const SizedBox(height: 8),
                                               
-                                              // ✅ ENABLE/DISABLE BUTTON (Connected to API)
+                                              // ENABLE/DISABLE BUTTON
                                               _buildStaffButton(
                                                 icon: isAvailable ? Icons.visibility_off : Icons.visibility,
                                                 label: isAvailable ? "Disable" : "Enable",
                                                 color: isAvailable ? const Color(0xFFE53935) : const Color(0xFF43A047),
                                                 onPressed: () async {
-                                                  // 1. Open Confirmation Dialog
                                                   final newStatusUI = await showDialog<String>(
                                                     context: context,
                                                     builder: (context) => ToggleStatusDialog(
@@ -380,10 +431,7 @@ class _StaffBrowselistState extends State<StaffBrowselist> {
                                                       currentStatus: currentStatus,
                                                     ),
                                                   );
-
-                                                  // 2. If confirmed, call API
                                                   if (newStatusUI != null) {
-                                                    // Convert UI status back to DB status format ('enable'/'disable')
                                                     final dbStatus = newStatusUI == "Available" ? "enable" : "disable";
                                                     _changeRoomStatus(roomId, dbStatus);
                                                   }
